@@ -1,0 +1,279 @@
+---
+import { ClientRouter } from 'astro:transitions';
+
+const { title } = Astro.props;
+---
+
+<html lang="ca">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    
+    <ClientRouter />
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style is:global>
+      :root {
+        --color-primari: #2d5a27;
+        --color-secundari: #eef2eb;
+        --color-text: #333333;
+        --color-fons: #fdfdf9;
+        /* Definim les variables de les fonts */
+        --font-text: 'Montserrat', sans-serif;
+        --font-titols: 'Lora', serif;
+      }
+      
+      * { box-sizing: border-box; }
+      
+      /* Apliquem la Montserrat al text general */
+      body { 
+        font-family: var(--font-text); 
+        background: var(--color-fons); 
+        color: var(--color-text); 
+        margin: 0; 
+        padding: 0; 
+        line-height: 1.6; 
+      }
+      
+      /* Apliquem la Lora als títols i al logo */
+      h1, h2, h3, h4, .logo { 
+        font-family: var(--font-titols); 
+      }
+      
+      main { padding: 2rem; max-width: 1200px; margin: 0 auto; min-height: 80vh; }
+      
+      /* CAPÇALERA STICKY I INTEL·LIGENT */
+      .capcalera-principal {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid #eaeaea;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        /* Afegim la transició perquè s'amagui suaument */
+        transition: transform 0.3s ease-in-out;
+      }
+
+      /* Aquesta és la classe que afegirà el JS per amagar el menú */
+      .capcalera-principal.amagada {
+        transform: translateY(-100%);
+      }
+
+      .nav-container { max-width: 1200px; margin: 0 auto; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
+      .logo { font-size: 1.5rem; font-weight: 600; color: var(--color-primari); text-decoration: none; }
+      
+      .enllacos-escriptori { display: flex; gap: 2rem; align-items: center; }
+      .enllacos-escriptori a { color: var(--color-text); text-decoration: none; font-weight: 500; transition: color 0.3s; }
+      .enllacos-escriptori a:hover { color: var(--color-primari); }
+      .enllacos-escriptori a.destacat { background: var(--color-primari); color: white; padding: 0.5rem 1.2rem; border-radius: 99px; }
+      .enllacos-escriptori a.destacat:hover { background: #1f421b; }
+
+      .bot-hamburguesa { display: none; flex-direction: column; gap: 6px; background: transparent; border: none; cursor: pointer; z-index: 1001; padding: 0; }
+      .linia { width: 30px; height: 3px; background: var(--color-primari); border-radius: 3px; transition: all 0.3s ease; }
+
+      .menu-mobil {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+        background: white;
+        display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 2rem;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.3s ease;
+        z-index: 999;
+      }
+      .menu-mobil.obert { opacity: 1; pointer-events: auto; }
+      .menu-mobil a { font-size: 1.5rem; color: var(--color-text); text-decoration: none; font-weight: 600; }
+
+      .bot-hamburguesa.actiu .linia:nth-child(1) { transform: translateY(9px) rotate(45deg); }
+      .bot-hamburguesa.actiu .linia:nth-child(2) { opacity: 0; }
+      .bot-hamburguesa.actiu .linia:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
+
+      @media (max-width: 768px) {
+        .enllacos-escriptori { display: none; }
+        .bot-hamburguesa { display: flex; }
+        .nav-container { padding: 1rem; }
+        main { padding: 1rem; }
+      }
+
+      /* --- PEU DE PÀGINA (FOOTER) --- */
+      .peu-pagina {
+        background-color: #1a3a16; /* Un verd molt fosc i elegant */
+        color: rgba(255, 255, 255, 0.8);
+        margin-top: 5rem;
+        padding-top: 4rem;
+      }
+
+      .footer-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 3rem;
+        margin-bottom: 3rem;
+      }
+
+      .footer-col h3, .footer-col h4 {
+        color: white;
+        font-family: var(--font-titols);
+        margin-top: 0;
+        margin-bottom: 1.2rem;
+      }
+
+      .footer-col h3 { font-size: 1.5rem; }
+      .footer-col h4 { font-size: 1.2rem; }
+
+      .footer-col p {
+        line-height: 1.6;
+        font-size: 0.95rem;
+      }
+
+      .footer-col ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      .footer-col ul li { margin-bottom: 0.8rem; }
+
+      .footer-col a {
+        color: rgba(255, 255, 255, 0.8);
+        text-decoration: none;
+        transition: color 0.3s;
+        font-size: 0.95rem;
+      }
+
+      .footer-col a:hover {
+        color: white;
+        text-decoration: underline;
+      }
+
+      .footer-bottom {
+        text-align: center;
+        padding: 1.5rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.85rem;
+      }
+    </style>
+  </head>
+  <body>
+    
+    <header class="capcalera-principal">
+      <nav class="nav-container">
+        <a href="/" class="logo">🌿 Arreldigital</a>
+        
+        <div class="enllacos-escriptori">
+          <a href="/">Inici</a>
+          <a href="#">El Projecte</a>
+          <a href="#">Contacte</a>
+          <a href="/cataleg" class="destacat">Catàleg de Plantes</a>
+        </div>
+
+        <button class="bot-hamburguesa" aria-label="Obrir menú">
+          <span class="linia"></span>
+          <span class="linia"></span>
+          <span class="linia"></span>
+        </button>
+      </nav>
+    </header>
+
+    <div class="menu-mobil">
+      <a href="/">Inici</a>
+      <a href="#">El Projecte</a>
+      <a href="/cataleg">Catàleg de Plantes</a>
+      <a href="#">Contacte</a>
+    </div>
+    
+    <main>
+      <slot /> 
+    </main>
+
+    <footer class="peu-pagina">
+      <div class="footer-container">
+        <div class="footer-col">
+          <h3>🌿 Arreldigital</h3>
+          <p>Preservant el coneixement etnobotànic i les tradicions medicinals per a les futures generacions. Un projecte nascut de l'amor per la nostra terra.</p>
+        </div>
+        
+        <div class="footer-col">
+          <h4>Navegació</h4>
+          <ul>
+            <li><a href="/">Inici</a></li>
+            <li><a href="/cataleg">Catàleg de Plantes</a></li>
+            <li><a href="/#projecte">El Projecte</a></li>
+          </ul>
+        </div>
+        
+        <div class="footer-col">
+          <h4>Legal i Contacte</h4>
+          <ul>
+            <li><a href="#">Avís Legal</a></li>
+            <li><a href="#">Política de Privacitat</a></li>
+            <li><a href="#">Instagram (@arreldigital)</a></li>
+            <li><a href="mailto:hola@arreldigital.cat">hola@arreldigital.cat</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="footer-bottom">
+        <p>&copy; 2026 Herbolari Arreldigital. Cuidant les tradicions.</p>
+      </div>
+    </footer>
+
+    <script>
+      // Variables per al control de l'scroll
+      let ultimScroll = 0;
+      
+      // Funció que comprova si estem baixant o pujant
+      const controlarScroll = () => {
+        const capcalera = document.querySelector('.capcalera-principal');
+        if (!capcalera) return;
+        
+        const actualScroll = window.scrollY;
+        
+        // Si baixem (més de 80px per no amagar-lo a dalt de tot)
+        if (actualScroll > ultimScroll && actualScroll > 80) {
+          capcalera.classList.add('amagada');
+        } 
+        // Si pugem
+        else {
+          capcalera.classList.remove('amagada');
+        }
+        
+        ultimScroll = actualScroll;
+      };
+
+      document.addEventListener('astro:page-load', () => {
+        // --- LÒGICA DEL MENÚ MÒBIL ---
+        const boto = document.querySelector('.bot-hamburguesa');
+        const menu = document.querySelector('.menu-mobil');
+        const enllacosMobil = document.querySelectorAll('.menu-mobil a');
+
+        if(boto && menu) {
+          boto.addEventListener('click', () => {
+            boto.classList.toggle('actiu');
+            menu.classList.toggle('obert');
+            document.body.style.overflow = menu.classList.contains('obert') ? 'hidden' : '';
+          });
+
+          enllacosMobil.forEach(enllac => {
+            enllac.addEventListener('click', () => {
+              boto.classList.remove('actiu');
+              menu.classList.remove('obert');
+              document.body.style.overflow = '';
+            });
+          });
+        }
+
+        // --- LÒGICA DE LA CAPÇALERA INTEL·LIGENT ---
+        // Primer netegem l'esdeveniment per evitar duplicats en navegar
+        window.removeEventListener('scroll', controlarScroll);
+        // L'afegim de nou
+        window.addEventListener('scroll', controlarScroll);
+      });
+    </script>
+  </body>
+</html>

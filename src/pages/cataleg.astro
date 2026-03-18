@@ -1,0 +1,255 @@
+---
+import axios from 'axios';
+import Layout from '../layouts/Layout.astro';
+
+let llistaPlantes = [];
+let missatgeError = null;
+let propietatsUniques = [];
+let familiesUniques = [];
+
+try {
+  // RECORDA: Canvia el port (ex: 10003) pel teu de LocalWP
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+    query: `
+      query ObtenirPlantes {
+        plantes(first: 100) {
+          nodes {
+            slug
+            title
+            featuredImage {
+              node {
+                sourceUrl
+                altText
+              }
+            }
+            propietats {
+              nodes {
+                name
+              }
+            }
+            # ATENCIÓ: Si el teu nom plural a GraphQL és diferent, canvia-ho aquí sota!
+            familiesBotaniques { 
+              nodes {
+                name
+              }
+            }
+            dadesBotaniques {
+              nomCientific
+              altresNomsComuns
+              usosMedicinals
+            }
+          }
+        }
+      }
+    `
+  });
+  
+  llistaPlantes = resposta.data?.data?.plantes?.nodes || [];
+
+  // Extraiem Propietats úniques
+  const totesLesPropietats = llistaPlantes.flatMap(planta => 
+    planta.propietats?.nodes?.map(prop => prop.name) || []
+  );
+  propietatsUniques = [...new Set(totesLesPropietats)].sort();
+
+  // Extraiem Famílies úniques
+  const totesLesFamilies = llistaPlantes.flatMap(planta => 
+    planta.familiesBotaniques?.nodes?.map(fam => fam.name) || []
+  );
+  familiesUniques = [...new Set(totesLesFamilies)].sort();
+
+} catch (error) {
+  missatgeError = error.message;
+}
+---
+
+<Layout title="Catàleg - Herbolari Arrel Digital">
+  
+  <div class="capcalera-cataleg">
+    <h1>Catàleg de Plantes</h1>
+    
+    {!missatgeError && (
+      <div class="panell-filtres">
+        
+        <div class="grup-filtre" style="flex-grow: 2;">
+          <label for="cercador-text">Buscar planta:</label>
+          <input 
+            type="text" 
+            id="cercador-text" 
+            class="desplegable input-cerca" 
+            placeholder="Escriu un nom o nom científic..." 
+          />
+        </div>
+
+        <div class="grup-filtre">
+          <label for="filtre-propietat">Propietat:</label>
+          <select id="filtre-propietat" class="desplegable">
+            <option value="totes">Totes</option>
+            {propietatsUniques.map((prop) => <option value={prop}>{prop}</option>)}
+          </select>
+        </div>
+
+        <div class="grup-filtre">
+          <label for="filtre-familia">Família Botànica:</label>
+          <select id="filtre-familia" class="desplegable">
+            <option value="totes">Totes</option>
+            {familiesUniques.map((fam) => <option value={fam}>{fam}</option>)}
+          </select>
+        </div>
+
+        <div class="grup-filtre">
+          <label for="ordre-alfabetic">Ordenar per:</label>
+          <select id="ordre-alfabetic" class="desplegable">
+            <option value="comu-az">Nom Comú (A - Z)</option>
+            <option value="comu-za">Nom Comú (Z - A)</option>
+            <option value="cientific-az">Nom Científic (A - Z)</option>
+            <option value="cientific-za">Nom Científic (Z - A)</option>
+          </select>
+        </div>
+
+      </div>
+    )}
+  </div>
+
+  {missatgeError && (
+    <div class="error-box">
+      <h3>Vaja! No hem pogut connectar amb WordPress:</h3>
+      <p>{missatgeError}</p>
+    </div>
+  )}
+
+  {!missatgeError && (
+    <div class="graella" id="graella-plantes">
+      {llistaPlantes.map((planta) => {
+        const llistaProps = planta.propietats?.nodes?.map(p => p.name).join(',') || '';
+        const llistaFams = planta.familiesBotaniques?.nodes?.map(f => f.name).join(',') || '';
+
+        return (
+          // NOU: Hem afegit data-cientific perquè el cercador el pugui llegir!
+          <article 
+            class="planta-card" 
+            data-titol={planta.title}
+            data-cientific={planta.dadesBotaniques?.nomCientific || ''}
+            data-alternatius={planta.dadesBotaniques?.altresNomsComuns || ''}
+            data-propietats={llistaProps}
+            data-families={llistaFams}
+          >
+            {planta.featuredImage?.node && (
+              <img src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} />
+            )}
+            
+            <div class="etiquetes-container">
+              {planta.familiesBotaniques?.nodes?.map((fam) => <span class="etiqueta familia">{fam.name}</span>)}
+              {planta.propietats?.nodes?.map((prop) => <span class="etiqueta propietat">{prop.name}</span>)}
+            </div>
+
+            <h2>{planta.title}</h2>
+            <small>També coneguda com: {planta.dadesBotaniques?.altresNomsComuns}</small>
+            <p><strong>Nom científic:</strong><em> {planta.dadesBotaniques?.nomCientific || 'Sense classificar'}</em></p>
+            <p><strong>Usos:</strong> <span set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} /></p>
+          
+            <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més &rarr;</a>
+          </article>
+        )
+      })}
+    </div>
+  )}
+</Layout>
+
+<style>
+  /* Mantenim els estils que ja teníem */
+  .capcalera-cataleg { margin-bottom: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 1.5rem; }
+  .capcalera-cataleg h1 { color: #2d5a27; margin-top: 0; margin-bottom: 1.5rem; }
+  .panell-filtres { display: flex; gap: 1.5rem; flex-wrap: wrap; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .grup-filtre { display: flex; flex-direction: column; gap: 0.3rem; flex-grow: 1; min-width: 150px; }
+  .grup-filtre label { font-size: 0.85rem; font-weight: bold; color: #555; }
+  .desplegable { padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; color: #333; background-color: #fdfdf9; cursor: pointer; }
+  .desplegable:focus { outline: none; border-color: #2d5a27; }
+  
+  /* Un petit extra per al camp de text */
+  .input-cerca { cursor: text; }
+  .input-cerca::placeholder { color: #aaa; }
+
+  .graella { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
+  .planta-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #f1f1f1; display: flex; flex-direction: column; }
+  .planta-card img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
+  .planta-card h2 { color: #2d5a27; margin-top: 0; margin-bottom: 0.5rem;}
+  .etiquetes-container { margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .etiqueta { padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: bold; }
+  .etiqueta.propietat { background: #eef2eb; color: #2d5a27; }
+  .etiqueta.familia { background: #e0f2fe; color: #0369a1; }
+  .boto-mes { margin-top: auto; padding: 0.5rem 1rem; background: #2d5a27; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }
+  .boto-mes:hover { background: #1f421b; }
+  .error-box { background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; border: 1px solid #ef4444; }
+</style>
+
+<script>
+  // Importem la màgia d'AutoAnimate
+  import autoAnimate from '@formkit/auto-animate';
+
+  // ATENCIÓ AL CANVI AQUÍ: Fem servir 'astro:page-load'
+  document.addEventListener('astro:page-load', () => {
+    const inputCerca = document.getElementById('cercador-text');
+    const selectPropietat = document.getElementById('filtre-propietat');
+    const selectFamilia = document.getElementById('filtre-familia');
+    const selectOrdre = document.getElementById('ordre-alfabetic');
+    
+    const graella = document.getElementById('graella-plantes');
+    
+    // Si no estem a la pàgina del catàleg (no hi ha graella), aturem l'script perquè no doni error
+    if (!graella) return;
+
+    const plantes = Array.from(document.querySelectorAll('.planta-card'));
+
+    // Activem l'animació a la graella
+    autoAnimate(graella);
+
+    function actualitzarGraella() {
+      const textCercat = inputCerca.value.toLowerCase().trim();
+      const propActiva = selectPropietat.value;
+      const famActiva = selectFamilia.value;
+      const ordreActiu = selectOrdre.value;
+
+      plantes.forEach(planta => {
+        const titol = planta.getAttribute('data-titol').toLowerCase();
+        const cientific = planta.getAttribute('data-cientific').toLowerCase();
+        const alternatius = planta.getAttribute('data-alternatius')?.toLowerCase() || '';
+        
+        const dadesProp = planta.getAttribute('data-propietats');
+        const dadesFam = planta.getAttribute('data-families');
+        
+        const compleixText = textCercat === '' || titol.includes(textCercat) || cientific.includes(textCercat) || alternatius.includes(textCercat);
+        const compleixProp = propActiva === 'totes' || dadesProp.includes(propActiva);
+        const compleixFam = famActiva === 'totes' || dadesFam.includes(famActiva);
+
+        if (compleixText && compleixProp && compleixFam) {
+          planta.style.display = 'flex';
+        } else {
+          planta.style.display = 'none';
+        }
+      });
+
+      plantes.sort((a, b) => {
+        const titolA = a.getAttribute('data-titol').toLowerCase();
+        const titolB = b.getAttribute('data-titol').toLowerCase();
+        const cientificA = a.getAttribute('data-cientific').toLowerCase();
+        const cientificB = b.getAttribute('data-cientific').toLowerCase();
+
+        if (ordreActiu === 'comu-az') return titolA.localeCompare(titolB);
+        if (ordreActiu === 'comu-za') return titolB.localeCompare(titolA);
+        if (ordreActiu === 'cientific-az') return cientificA.localeCompare(cientificB);
+        if (ordreActiu === 'cientific-za') return cientificB.localeCompare(cientificA);
+        return 0;
+      });
+
+      plantes.forEach(planta => graella.appendChild(planta));
+    }
+
+    inputCerca.addEventListener('input', actualitzarGraella);
+    selectPropietat.addEventListener('change', actualitzarGraella);
+    selectFamilia.addEventListener('change', actualitzarGraella);
+    selectOrdre.addEventListener('change', actualitzarGraella);
+
+    actualitzarGraella();
+  });
+</script>

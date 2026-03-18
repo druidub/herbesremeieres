@@ -1,0 +1,136 @@
+---
+import axios from 'axios';
+import Layout from '../../layouts/Layout.astro'; 
+
+export async function getStaticPaths() {
+  // RECORDA: Mantén el teu port de LocalWP (10003)
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+    query: `
+      query TotesLesPlantes {
+        plantes(first: 100) {
+          nodes {
+            slug
+            title
+            content
+            featuredImage { node { sourceUrl altText } }
+            propietats { nodes { name } }
+            dadesBotaniques { nomCientific usosMedicinals }
+          }
+        }
+      }
+    `
+  });
+
+  const totesLesPlantes = resposta.data?.data?.plantes?.nodes || [];
+
+  return totesLesPlantes.map((plantaActual) => {
+    
+    // 1. Quines propietats té aquesta planta? (ex: ['Antisèptica', 'Digestiva'])
+    const propietatsActuals = plantaActual.propietats?.nodes?.map(p => p.name) || [];
+
+    // 2. Busquem altres plantes que comparteixin com a mínim una d'aquestes propietats
+    const plantesRelacionades = totesLesPlantes.filter(altraPlanta => {
+      // Excloem la planta actual perquè no surti a la seva pròpia llista
+      if (altraPlanta.slug === plantaActual.slug) return false;
+      
+      const propietatsAltraPlanta = altraPlanta.propietats?.nodes?.map(p => p.name) || [];
+      // Retorna 'true' si troba alguna propietat en comú
+      return propietatsActuals.some(prop => propietatsAltraPlanta.includes(prop));
+    }).slice(0, 3); // 3. Ens quedem només amb un màxim de 3 recomanacions
+
+    return {
+      params: { slug: plantaActual.slug },
+      // Ara passem dues coses a la pàgina: la planta actual I les seves relacionades
+      props: { planta: plantaActual, relacionades: plantesRelacionades },
+    };
+  });
+}
+
+// Recollim les dades que ens envia la funció de dalt
+const { planta, relacionades = [] } = Astro.props;
+---
+
+<Layout title={`${planta.title} - Herbolari Arrel Digital`}>
+  
+  <a href="/cataleg" class="boto-tornar">&larr; Tornar al catàleg</a>
+
+  <div class="capcalera">
+    {planta.featuredImage?.node && (
+      <img src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText || planta.title} />
+    )}
+    <div>
+      <h1>{planta.title}</h1>
+      <p class="nom-cientific">{planta.dadesBotaniques?.nomCientific}</p>
+      
+      <div class="etiquetes-container">
+        {planta.propietats?.nodes?.map((prop) => (
+          <span class="etiqueta propietat">{prop.name}</span>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <div class="contingut-extra">
+    <h2>Usos Medicinals</h2>
+    <div set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} />
+    
+    {planta.content && (
+      <>
+        <hr class="separador" />
+        <h2>Història, màgia i tradicions</h2>
+        <div set:html={planta.content} />
+      </>
+    )}
+  </div>
+
+  {/* NOU: Secció de Plantes Relacionades */}
+  {relacionades.length > 0 && (
+    <div class="seccio-relacionades">
+      <h3>🌿 Altres plantes que et poden interessar...</h3>
+      <div class="graella-relacionades">
+        {relacionades.map(relacionada => (
+          <a href={`/planta/${relacionada.slug}`} class="targeta-relacionada">
+            {relacionada.featuredImage?.node && (
+              <img src={relacionada.featuredImage.node.sourceUrl} alt={relacionada.title} />
+            )}
+            <h4>{relacionada.title}</h4>
+          </a>
+        ))}
+      </div>
+    </div>
+  )}
+
+</Layout>
+
+<style>
+  /* Estils originals de la fitxa */
+  .capcalera { display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; }
+  .capcalera img { width: 300px; height: 300px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+  h1 { color: #2d5a27; font-size: 3rem; margin-bottom: 0.5rem; margin-top: 0; }
+  .nom-cientific { font-style: italic; color: #666; font-size: 1.2rem; margin-top: 0; }
+  
+  .etiquetes-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
+  .etiqueta { padding: 0.3rem 0.8rem; border-radius: 99px; font-size: 0.9rem; font-weight: bold; }
+  .etiqueta.propietat { background: #eef2eb; color: #2d5a27; }
+  
+  .contingut-extra { background: white; padding: 2rem; border-radius: 12px; border: 1px solid #e5e5e5; margin-top: 2rem; }
+  .boto-tornar { display: inline-block; margin-bottom: 2rem; color: #2d5a27; text-decoration: none; font-weight: bold; }
+  .boto-tornar:hover { text-decoration: underline; }
+  .separador { margin: 2rem 0; border-top: 1px solid #eee; border-bottom: none; }
+
+  /* NOU: Estils per a les plantes relacionades */
+  .seccio-relacionades { margin-top: 4rem; border-top: 2px dashed #e5e5e5; padding-top: 2rem; }
+  .seccio-relacionades h3 { color: #2d5a27; margin-bottom: 1.5rem; }
+  .graella-relacionades { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; }
+  
+  .targeta-relacionada { text-decoration: none; color: inherit; background: white; padding: 1rem; border-radius: 8px; border: 1px solid #eee; transition: transform 0.2s, box-shadow 0.2s; display: block; }
+  .targeta-relacionada:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
+  .targeta-relacionada img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 0.8rem; }
+  .targeta-relacionada h4 { margin: 0; color: #333; font-size: 1.1rem; }
+
+  @media (max-width: 768px) {
+    .capcalera { flex-direction: column; align-items: flex-start; gap: 1rem; }
+    .capcalera img { width: 100%; max-width: 100%; height: auto; max-height: 300px; }
+    h1 { font-size: 2rem; }
+  }
+</style>
