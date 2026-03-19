@@ -1,0 +1,62 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Missatge enviat | Herbes Remeieres">
+    <main class="thanks-container">
+        <div class="thanks-content">
+            <span class="icon">🌿</span>
+            <h1>Gràcies pel teu missatge!</h1>
+            <p>Hem rebut el teu correu correctament. Ens posarem en contacte amb tu des de <strong>hola@herbesremeieres.cat</strong> ben aviat.</p>
+            <a href="/" class="home-btn">Tornar a l'inici</a>
+        </div>
+    </main>
+</Layout>
+
+<style>
+    .thanks-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+    }
+    .thanks-content {
+        text-align: center;
+        max-width: 500px;
+        background-color: #fdfdf9;
+        padding: 3rem 2rem;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    .icon {
+        font-size: 4rem;
+        display: block;
+        margin-bottom: 1rem;
+    }
+    h1 {
+        color: #2d5a27;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+    }
+    p {
+        color: #4b5563;
+        font-size: 1.1rem;
+        line-height: 1.5;
+        margin-bottom: 2rem;
+    }
+    .home-btn {
+        display: inline-block;
+        background-color: #2d5a27;
+        color: white;
+        padding: 0.75rem 1.5rem;
+        text-decoration: none;
+        font-weight: bold;
+        border-radius: 4px;
+        transition: background-color 0.3s ease;
+    }
+    .home-btn:hover {
+        background-color: #1f3f1b;
+    }
+</style>

@@ -12,32 +12,37 @@ import Layout from '../layouts/Layout.astro';
 		
 		<div class="form-wrapper">
 			<form action="https://api.web3forms.com/submit" method="POST" class="contact-form">
-				
-				<input type="hidden" name="access_key" value="21844423-b8a5-4cd1-9f79-6d309729aa68">
+    
+                <input type="hidden" name="access_key" value="POSA_LA_NOVA_CLAU_AQUI">
 
-				<input type="hidden" name="redirect" value="https://herbesremeieres.cat/contacte">
+                <input type="hidden" name="redirect" value="https://herbesremeieres.cat/gracies">
 
-				<div class="form-group">
-					<label for="name">Nom o Pseudònim</label>
-					<input type="text" id="name" name="name" required>
-				</div>
+                <div class="form-group">
+                    <label for="name">Nom o Pseudònim</label>
+                    <input type="text" id="name" name="name" required>
+                </div>
 
-				<div class="form-group">
-					<label for="email">El teu correu electrònic</label>
-					<input type="email" id="email" name="email" required>
-				</div>
+                <div class="form-group">
+                    <label for="email">El teu correu electrònic</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
 
-				<div class="form-group">
-					<label for="message">El teu missatge</label>
-					<textarea id="message" name="message" rows="5" required></textarea>
-				</div>
+                <div class="form-group">
+                    <label for="message">El teu missatge</label>
+                    <textarea id="message" name="message" rows="5" required></textarea>
+                </div>
 
-				<input type="checkbox" name="botcheck" style="display: none;">
+                <div class="form-group privacy-group">
+                    <input type="checkbox" id="privacy" name="privacy" required>
+                    <label for="privacy">He llegit i accepto la <a href="/privacitat" style="color: #2d5a27; text-decoration: underline;">política de privacitat</a>.</label>
+                </div>
 
-				<button type="submit" class="submit-btn">
-					Enviar missatge
-				</button>
-			</form>
+                <input type="checkbox" name="botcheck" style="display: none;">
+
+                <button type="submit" class="submit-btn">
+                    Enviar missatge
+                </button>
+            </form>
 		</div>
 	</main>
 </Layout>
@@ -118,4 +123,29 @@ import Layout from '../layouts/Layout.astro';
 	.submit-btn:hover {
 		background-color: #1f3f1b;
 	}
+
+    .privacy-group {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+.privacy-group input {
+    width: auto;
+    margin-top: 0.3rem;
+}
+.privacy-group label {
+    font-weight: normal;
+    color: #4b5563;
+    margin-bottom: 0;
+}
+
+    @media (max-width: 600px) {
+        .page-title {
+            font-size: 2rem;
+        }
+        .contact-form {
+            padding: 1.5rem;
+        }
+    }
+    
 </style>
