@@ -1,5 +1,8 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+// Llegim la clau secreta de l'arxiu .env
+const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY;
 ---
 
 <Layout title="Contacte | Herbes Remeieres">
@@ -13,7 +16,7 @@ import Layout from '../layouts/Layout.astro';
 		<div class="form-wrapper">
 			<form action="https://api.web3forms.com/submit" method="POST" class="contact-form">
     
-                <input type="hidden" name="access_key" value="21844423-b8a5-4cd1-9f79-6d309729aa68">
+                <input type="hidden" name="access_key" value={web3formsKey}>
 
                 <input type="hidden" name="redirect" value="https://herbesremeieres.cat/gracies">
 
