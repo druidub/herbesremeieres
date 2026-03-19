@@ -1,6 +1,7 @@
 ---
 import axios from 'axios';
 import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
 
 let llistaPlantes = [];
 let missatgeError = null;
@@ -135,7 +136,7 @@ try {
             data-families={llistaFams}
           >
             {planta.featuredImage?.node && (
-              <img src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} />
+              <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} />
             )}
             
             <div class="etiquetes-container">

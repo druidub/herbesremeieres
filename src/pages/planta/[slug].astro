@@ -1,6 +1,7 @@
 ---
 import axios from 'axios';
 import Layout from '../../layouts/Layout.astro'; 
+import { Image } from 'astro:assets';
 
 export async function getStaticPaths() {
   // RECORDA: Mantén el teu port de LocalWP (10003)
@@ -56,7 +57,7 @@ const { planta, relacionades = [] } = Astro.props;
 
   <div class="capcalera">
     {planta.featuredImage?.node && (
-      <img src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText || planta.title} />
+      <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText || planta.title} />
     )}
     <div>
       <h1>{planta.title}</h1>
@@ -91,7 +92,7 @@ const { planta, relacionades = [] } = Astro.props;
         {relacionades.map(relacionada => (
           <a href={`/planta/${relacionada.slug}`} class="targeta-relacionada">
             {relacionada.featuredImage?.node && (
-              <img src={relacionada.featuredImage.node.sourceUrl} alt={relacionada.title} />
+              <Image src={relacionada.featuredImage.node.sourceUrl} alt={relacionada.title} />
             )}
             <h4>{relacionada.title}</h4>
           </a>
