@@ -11,7 +11,33 @@ import Layout from '../layouts/Layout.astro';
 		</p>
 		
 		<div class="p-6 bg-gray-50 border border-gray-200 rounded-lg">
-			<p class="text-center text-gray-500 italic">El formulari de contacte s'està preparant...</p>
+			<form action="https://api.web3forms.com/submit" method="POST" class="max-w-xl mx-auto p-8 bg-white border border-gray-200 rounded-lg shadow-sm">
+    
+                <input type="hidden" name="access_key" value="21844423-b8a5-4cd1-9f79-6d309729aa68">
+
+                <input type="hidden" name="redirect" value="https://herbesremeieres.cat/contacte">
+
+                <div class="mb-6">
+                    <label for="name" class="block text-gray-700 font-medium mb-2">Nom o Pseudònim</label>
+                    <input type="text" id="name" name="name" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-verd-fosc focus:border-verd-fosc outline-none">
+                </div>
+
+                <div class="mb-6">
+                    <label for="email" class="block text-gray-700 font-medium mb-2">El teu correu electrònic</label>
+                    <input type="email" id="email" name="email" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-verd-fosc focus:border-verd-fosc outline-none">
+                </div>
+
+                <div class="mb-6">
+                    <label for="message" class="block text-gray-700 font-medium mb-2">El teu missatge</label>
+                    <textarea id="message" name="message" rows="5" required class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-verd-fosc focus:border-verd-fosc outline-none"></textarea>
+                </div>
+
+                <input type="checkbox" name="botcheck" class="hidden" style="display: none;">
+
+                <button type="submit" class="w-full bg-[#2d5a27] text-white font-bold py-3 px-4 rounded-md hover:bg-opacity-90 transition duration-300">
+                    Enviar missatge
+                </button>
+            </form>
 		</div>
 	</main>
 </Layout>
