@@ -7,10 +7,10 @@ let llistaPlantes = [];
 let missatgeError = null;
 let propietatsUniques = [];
 let familiesUniques = [];
+let afeccionsUniques = []; // NOU: Declarem la variable aquí dalt
 
 try {
-  // RECORDA: Canvia el port (ex: 10003) pel teu de LocalWP
-  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, { 
     query: `
       query ObtenirPlantes {
         plantes(first: 100) {
@@ -28,7 +28,6 @@ try {
                 name
               }
             }
-            # ATENCIÓ: Si el teu nom plural a GraphQL és diferent, canvia-ho aquí sota!
             familiesBotaniques { 
               nodes {
                 name
@@ -38,6 +37,12 @@ try {
               nomCientific
               altresNomsComuns
               usosMedicinals
+            }
+            afeccions {
+              nodes {
+                name
+                slug
+              }
             }
           }
         }
@@ -58,6 +63,18 @@ try {
     planta.familiesBotaniques?.nodes?.map(fam => fam.name) || []
   );
   familiesUniques = [...new Set(totesLesFamilies)].sort();
+
+  // NOU: Extraiem Afeccions úniques (Corregit llistaPlantes)
+  llistaPlantes.forEach((planta) => {
+    if (planta.afeccions && planta.afeccions.nodes) {
+      planta.afeccions.nodes.forEach((afeccio) => {
+        if (!afeccionsUniques.some(a => a.slug === afeccio.slug)) {
+          afeccionsUniques.push(afeccio);
+        }
+      });
+    }
+  });
+  afeccionsUniques.sort((a, b) => a.name.localeCompare(b.name));
 
 } catch (error) {
   missatgeError = error.message;
@@ -110,6 +127,17 @@ try {
 
       </div>
     )}
+
+    {!missatgeError && (
+      <div class="filtres-afeccions">
+        <button class="btn-filtre actiu" data-filtre="totes">Totes les afeccions</button>
+        {afeccionsUniques.map((afeccio) => (
+          <button class="btn-filtre" data-filtre={afeccio.slug}>
+            {afeccio.name}
+          </button>
+        ))}
+      </div>
+    )}
   </div>
 
   {missatgeError && (
@@ -124,9 +152,10 @@ try {
       {llistaPlantes.map((planta) => {
         const llistaProps = planta.propietats?.nodes?.map(p => p.name).join(',') || '';
         const llistaFams = planta.familiesBotaniques?.nodes?.map(f => f.name).join(',') || '';
+        // NOU: Llistem les afeccions per al data-attribute
+        const llistaAfeccions = planta.afeccions?.nodes?.map(a => a.slug).join(' ') || '';
 
         return (
-          // NOU: Hem afegit data-cientific perquè el cercador el pugui llegir!
           <article 
             class="planta-card" 
             data-titol={planta.title}
@@ -134,6 +163,7 @@ try {
             data-alternatius={planta.dadesBotaniques?.altresNomsComuns || ''}
             data-propietats={llistaProps}
             data-families={llistaFams}
+            data-afeccions={llistaAfeccions} 
           >
             {planta.featuredImage?.node && (
               <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} width={1024} height={768} />
@@ -158,18 +188,37 @@ try {
 </Layout>
 
 <style>
-  /* Mantenim els estils que ja teníem */
   .capcalera-cataleg { margin-bottom: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 1.5rem; }
   .capcalera-cataleg h1 { color: #2d5a27; margin-top: 0; margin-bottom: 1.5rem; }
-  .panell-filtres { display: flex; gap: 1.5rem; flex-wrap: wrap; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+  .panell-filtres { display: flex; gap: 1.5rem; flex-wrap: wrap; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
   .grup-filtre { display: flex; flex-direction: column; gap: 0.3rem; flex-grow: 1; min-width: 150px; }
   .grup-filtre label { font-size: 0.85rem; font-weight: bold; color: #555; }
   .desplegable { padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; color: #333; background-color: #fdfdf9; cursor: pointer; }
   .desplegable:focus { outline: none; border-color: #2d5a27; }
-  
-  /* Un petit extra per al camp de text */
   .input-cerca { cursor: text; }
   .input-cerca::placeholder { color: #aaa; }
+
+  /* NOU: Estils per als botons d'afeccions */
+  .filtres-afeccions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+  .btn-filtre {
+    padding: 0.4rem 1rem;
+    border: 1px solid #2d5a27;
+    background: transparent;
+    color: #2d5a27;
+    border-radius: 50px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-filtre:hover, .btn-filtre.actiu {
+    background: #2d5a27;
+    color: white;
+  }
 
   .graella { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
   .planta-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #f1f1f1; display: flex; flex-direction: column; }
@@ -185,25 +234,35 @@ try {
 </style>
 
 <script>
-  // Importem la màgia d'AutoAnimate
   import autoAnimate from '@formkit/auto-animate';
 
-  // ATENCIÓ AL CANVI AQUÍ: Fem servir 'astro:page-load'
   document.addEventListener('astro:page-load', () => {
     const inputCerca = document.getElementById('cercador-text');
     const selectPropietat = document.getElementById('filtre-propietat');
     const selectFamilia = document.getElementById('filtre-familia');
     const selectOrdre = document.getElementById('ordre-alfabetic');
+    const botonsAfeccio = document.querySelectorAll('.btn-filtre'); // NOU
     
     const graella = document.getElementById('graella-plantes');
-    
-    // Si no estem a la pàgina del catàleg (no hi ha graella), aturem l'script perquè no doni error
     if (!graella) return;
 
     const plantes = Array.from(document.querySelectorAll('.planta-card'));
-
-    // Activem l'animació a la graella
     autoAnimate(graella);
+
+    let afeccioActiva = 'totes'; // NOU: Guardem quina afecció està clicada
+
+    // NOU: Clicks als botons d'afeccions
+    botonsAfeccio.forEach(boto => {
+      boto.addEventListener('click', (e) => {
+        // Traiem la classe 'actiu' a tots i la posem al que hem clicat
+        botonsAfeccio.forEach(b => b.classList.remove('actiu'));
+        e.target.classList.add('actiu');
+        
+        // Guardem el filtre actiu i actualitzem la graella
+        afeccioActiva = e.target.getAttribute('data-filtre');
+        actualitzarGraella();
+      });
+    });
 
     function actualitzarGraella() {
       const textCercat = inputCerca.value.toLowerCase().trim();
@@ -218,12 +277,15 @@ try {
         
         const dadesProp = planta.getAttribute('data-propietats');
         const dadesFam = planta.getAttribute('data-families');
+        const dadesAfecc = planta.getAttribute('data-afeccions') || ''; // NOU
         
         const compleixText = textCercat === '' || titol.includes(textCercat) || cientific.includes(textCercat) || alternatius.includes(textCercat);
         const compleixProp = propActiva === 'totes' || dadesProp.includes(propActiva);
         const compleixFam = famActiva === 'totes' || dadesFam.includes(famActiva);
+        const compleixAfeccio = afeccioActiva === 'totes' || dadesAfecc.includes(afeccioActiva); // NOU
 
-        if (compleixText && compleixProp && compleixFam) {
+        // NOU: Afegim 'compleixAfeccio' a la condició final
+        if (compleixText && compleixProp && compleixFam && compleixAfeccio) {
           planta.style.display = 'flex';
         } else {
           planta.style.display = 'none';
