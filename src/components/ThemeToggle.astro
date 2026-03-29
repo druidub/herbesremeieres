@@ -1,0 +1,119 @@
+---
+// ThemeToggle — component de canvi mode clar/fosc
+// Icones SVG inline, line art, 20px, color --text-primary
+---
+
+<button class="theme-toggle" aria-label="Canviar mode clar/fosc" title="Canviar mode clar/fosc">
+  <!-- Lluna: visible en mode clar, s'amaga en fosc -->
+  <svg class="icona-lluna" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+  </svg>
+
+  <!-- Sol: visible en mode fosc, s'amaga en clar -->
+  <svg class="icona-sol" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <circle cx="12" cy="12" r="5"/>
+    <line x1="12" y1="1" x2="12" y2="3"/>
+    <line x1="12" y1="21" x2="12" y2="23"/>
+    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+    <line x1="1" y1="12" x2="3" y2="12"/>
+    <line x1="21" y1="12" x2="23" y2="12"/>
+    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+  </svg>
+</button>
+
+<style>
+  .theme-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    color: var(--text-primary);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .theme-toggle:hover {
+    color: var(--accent-green);
+  }
+
+  /* --- Estat per defecte: mode clar ---
+     Lluna visible, sol amagat */
+  .icona-lluna {
+    position: absolute;
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+
+  .icona-sol {
+    position: absolute;
+    opacity: 0;
+    transform: rotate(-90deg);
+  }
+
+  /* --- Mode fosc via data-theme ---
+     Sol visible, lluna amagada */
+  :global([data-theme="dark"]) .icona-lluna {
+    opacity: 0;
+    transform: rotate(20deg);
+  }
+
+  :global([data-theme="dark"]) .icona-sol {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
+
+  /* --- Mode fosc via prefers-color-scheme (quan no hi ha data-theme) --- */
+  @media (prefers-color-scheme: dark) {
+    :global(html:not([data-theme="light"])) .icona-lluna {
+      opacity: 0;
+      transform: rotate(20deg);
+    }
+
+    :global(html:not([data-theme="light"])) .icona-sol {
+      opacity: 1;
+      transform: rotate(0deg);
+    }
+  }
+
+  /* --- Transicions (respecta prefers-reduced-motion) --- */
+  @media (prefers-reduced-motion: no-preference) {
+    .icona-lluna,
+    .icona-sol {
+      transition:
+        opacity 200ms ease-out,
+        transform 200ms ease-out;
+    }
+
+    .theme-toggle:hover {
+      transition: color 150ms ease-out;
+    }
+  }
+</style>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const boto = document.querySelector('.theme-toggle');
+    if (!boto) return;
+
+    boto.addEventListener('click', () => {
+      const html = document.documentElement;
+      const esFosc = html.getAttribute('data-theme') === 'dark';
+
+      if (esFosc) {
+        html.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'light');
+      } else {
+        html.setAttribute('data-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+      }
+    });
+  });
+</script>
