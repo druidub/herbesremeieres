@@ -93,7 +93,31 @@
   }
 }
 
-/* ── Toggle manual (opcional) ────────────────────── */
+/* ── Toggle manual ───────────────────────────────── */
+/* [data-theme="light"] sobreescriu la media query del sistema quan cal */
+[data-theme="light"] {
+  --bg-primary: #F2EDE4;
+  --bg-secondary: #EAE4D8;
+  --bg-tertiary: #E0D8C8;
+  --text-primary: #3D2B1F;
+  --text-secondary: #6B5744;
+  --text-tertiary: #8B7355;
+  --accent-green: #4A6741;
+  --accent-green-hover: #5B7D51;
+  --accent-green-soft: rgba(74, 103, 65, 0.12);
+  --accent-amber: #D4A843;
+  --accent-amber-hover: #C49A35;
+  --accent-amber-soft: rgba(212, 168, 67, 0.15);
+  --border-default: #D4C9B8;
+  --border-subtle: #E0D8C8;
+  --color-caution: #B8860B;
+  --color-danger: #8B3A3A;
+  --tag-bg: rgba(74, 103, 65, 0.12);
+  --tag-text: #4A6741;
+  --nav-bg: rgba(242, 237, 228, 0.85);
+  --footer-bg: #EAE4D8;
+}
+
 [data-theme="dark"] {
   --bg-primary: #1A3C2A;
   --bg-secondary: #1F4432;
@@ -153,6 +177,10 @@ h3 { font-size: 1.375rem; font-weight: 500; }
 
 [data-theme="dark"] .scientific-name {
   color: var(--accent-amber);
+}
+
+[data-theme="light"] .scientific-name {
+  color: var(--accent-green);
 }
 
 /* ── Tags / Badges ───────────────────────────────── */

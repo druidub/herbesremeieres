@@ -4,12 +4,12 @@
 ---
 
 <button class="theme-toggle" aria-label="Canviar mode clar/fosc" title="Canviar mode clar/fosc">
-  <!-- Lluna: visible en mode clar, s'amaga en fosc -->
+  <!-- Lluna: visible en mode clar [data-theme="light"] -->
   <svg class="icona-lluna" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
   </svg>
 
-  <!-- Sol: visible en mode fosc, s'amaga en clar -->
+  <!-- Sol: visible en mode fosc [data-theme="dark"] -->
   <svg class="icona-sol" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
     <circle cx="12" cy="12" r="5"/>
     <line x1="12" y1="1" x2="12" y2="3"/>
@@ -44,25 +44,27 @@
     color: var(--accent-green);
   }
 
-  /* --- Estat per defecte: mode clar ---
-     Lluna visible, sol amagat */
-  .icona-lluna {
+  /* Totes dues icones superposades, opacitat controla quina es veu */
+  .icona-lluna,
+  .icona-sol {
     position: absolute;
+  }
+
+  /* MODE CLAR [data-theme="light"]: lluna visible, sol amagat */
+  :global([data-theme="light"]) .icona-lluna {
     opacity: 1;
     transform: rotate(0deg);
   }
 
-  .icona-sol {
-    position: absolute;
+  :global([data-theme="light"]) .icona-sol {
     opacity: 0;
-    transform: rotate(-90deg);
+    transform: rotate(90deg);
   }
 
-  /* --- Mode fosc via data-theme ---
-     Sol visible, lluna amagada */
+  /* MODE FOSC [data-theme="dark"]: sol visible, lluna amagada */
   :global([data-theme="dark"]) .icona-lluna {
     opacity: 0;
-    transform: rotate(20deg);
+    transform: rotate(-20deg);
   }
 
   :global([data-theme="dark"]) .icona-sol {
@@ -70,17 +72,15 @@
     transform: rotate(0deg);
   }
 
-  /* --- Mode fosc via prefers-color-scheme (quan no hi ha data-theme) --- */
-  @media (prefers-color-scheme: dark) {
-    :global(html:not([data-theme="light"])) .icona-lluna {
-      opacity: 0;
-      transform: rotate(20deg);
-    }
+  /* Estat inicial (abans que el JS escrigui data-theme): mostra lluna */
+  .icona-lluna {
+    opacity: 1;
+    transform: rotate(0deg);
+  }
 
-    :global(html:not([data-theme="light"])) .icona-sol {
-      opacity: 1;
-      transform: rotate(0deg);
-    }
+  .icona-sol {
+    opacity: 0;
+    transform: rotate(90deg);
   }
 
   /* --- Transicions (respecta prefers-reduced-motion) --- */
@@ -92,7 +92,7 @@
         transform 200ms ease-out;
     }
 
-    .theme-toggle:hover {
+    .theme-toggle {
       transition: color 150ms ease-out;
     }
   }
@@ -100,20 +100,24 @@
 
 <script>
   document.addEventListener('astro:page-load', () => {
-    const boto = document.querySelector('.theme-toggle');
-    if (!boto) return;
+    // Seleccionem tots els botons de toggle (n'hi pot haver dos: desktop i mòbil)
+    const botons = document.querySelectorAll('.theme-toggle');
+    if (!botons.length) return;
 
-    boto.addEventListener('click', () => {
-      const html = document.documentElement;
-      const esFosc = html.getAttribute('data-theme') === 'dark';
+    botons.forEach(boto => {
+      boto.addEventListener('click', () => {
+        const html = document.documentElement;
+        const esFosc = html.getAttribute('data-theme') === 'dark';
 
-      if (esFosc) {
-        html.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-      } else {
-        html.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-      }
+        if (esFosc) {
+          // Canviem a clar: escrivim 'light' explícitament per sobreescriure la media query
+          html.setAttribute('data-theme', 'light');
+          localStorage.setItem('theme', 'light');
+        } else {
+          html.setAttribute('data-theme', 'dark');
+          localStorage.setItem('theme', 'dark');
+        }
+      });
     });
   });
 </script>

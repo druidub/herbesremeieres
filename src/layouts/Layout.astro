@@ -14,16 +14,17 @@ const { title } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>{title}</title>
 
-    <!-- Script anti-FOUC: inicialitza el tema abans del primer renderitzat -->
+    <!-- Script anti-FOUC: inicialitza el tema SEMPRE abans del primer renderitzat -->
     <script is:inline>
       (function () {
         var saved = localStorage.getItem('theme');
         var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        // Sempre escrivim data-theme (o 'dark' o 'light') per evitar conflictes
+        // amb @media (prefers-color-scheme: dark) quan l'usuari ha triat manualment
         if (saved === 'dark' || (!saved && prefersDark)) {
           document.documentElement.setAttribute('data-theme', 'dark');
-        } else if (saved === 'light') {
-          // Mode clar explícit: assegurem que no hi ha atribut fosc
-          document.documentElement.removeAttribute('data-theme');
+        } else {
+          document.documentElement.setAttribute('data-theme', 'light');
         }
       })();
     </script>
@@ -125,6 +126,8 @@ const { title } = Astro.props;
         .bot-hamburguesa { display: flex; }
         .nav-container { padding: 1rem; }
         main { padding: 1rem; }
+        /* El toggle del header s'amaga en mòbil: només es veu dins el menú desplegat */
+        .nav-accions :global(.theme-toggle) { display: none; }
       }
 
       /* --- PEU DE PÀGINA (FOOTER) --- */
