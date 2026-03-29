@@ -21,42 +21,59 @@ import Layout from '../layouts/Layout.astro';
         justify-content: center;
         padding: 2rem;
     }
+
     .thanks-content {
         text-align: center;
         max-width: 500px;
-        background-color: #fdfdf9;
+        background-color: var(--bg-secondary);
         padding: 3rem 2rem;
-        border-radius: 8px;
-        border: 1px solid #e5e7eb;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border-default);
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
     }
+
     .icon {
         font-size: 4rem;
         display: block;
         margin-bottom: 1rem;
     }
+
     h1 {
-        color: #2d5a27;
+        color: var(--text-primary);
         font-size: 2rem;
         margin-bottom: 1rem;
     }
+
     p {
-        color: #4b5563;
+        color: var(--text-secondary);
         font-size: 1.1rem;
         line-height: 1.5;
         margin-bottom: 2rem;
     }
+
     .home-btn {
         display: inline-block;
-        background-color: #2d5a27;
-        color: white;
+        background-color: var(--accent-green);
+        color: var(--bg-primary);
         padding: 0.75rem 1.5rem;
         text-decoration: none;
         font-weight: bold;
-        border-radius: 4px;
-        transition: background-color 0.3s ease;
+        font-family: var(--font-body);
+        border-radius: var(--radius-sm);
     }
-    .home-btn:hover {
-        background-color: #1f3f1b;
+
+    @media (prefers-reduced-motion: no-preference) {
+        .home-btn {
+            transition: background-color 150ms ease-out, transform 150ms ease-out;
+        }
+
+        .home-btn:hover {
+            background-color: var(--accent-green-hover);
+            transform: translateY(-1px);
+        }
+
+        .home-btn:active {
+            transform: scale(0.98);
+        }
     }
 </style>

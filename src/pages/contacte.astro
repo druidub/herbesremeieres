@@ -9,14 +9,13 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY;
 	<main class="page-container">
 		<h1 class="page-title">Contacta amb nosaltres</h1>
 		<p class="page-description">
-			Tens algun dubte, suggeriment o vols col·laborar amb nosaltres? 
+			Tens algun dubte, suggeriment o vols col·laborar amb nosaltres?
 			Escriu-nos i et respondrem ben aviat.
 		</p>
-		
-		
+
 			<form action="https://api.web3forms.com/submit" method="POST" class="contact-form">
-    
-                <input type="hidden" name="access_key" value={web3formsKey}> 
+
+                <input type="hidden" name="access_key" value={web3formsKey}>
 
                 <input type="hidden" name="redirect" value="https://herbesremeieres.cat/gracies">
 
@@ -37,7 +36,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY;
 
                 <div class="form-group privacy-group">
                     <input type="checkbox" id="privacy" name="privacy" required>
-                    <label for="privacy">He llegit i accepto la <a href="/privacitat" style="color: #2d5a27; text-decoration: underline;">política de privacitat</a>.</label>
+                    <label for="privacy">He llegit i accepto la <a href="/privacitat" class="link-privacitat">política de privacitat</a>.</label>
                 </div>
 
                 <input type="checkbox" name="botcheck" style="display: none;">
@@ -46,7 +45,7 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY;
                     Enviar missatge
                 </button>
             </form>
-		
+
 	</main>
 </Layout>
 
@@ -56,90 +55,118 @@ const web3formsKey = import.meta.env.PUBLIC_WEB3FORMS_KEY;
 		margin: 0 auto;
 		padding: 3rem 1rem;
 	}
+
 	.page-title {
 		font-size: 2.5rem;
 		font-weight: bold;
-		color: #2d5a27;
+		color: var(--text-primary);
 		margin-bottom: 1.5rem;
 		text-align: center;
 	}
+
 	.page-description {
 		font-size: 1.125rem;
-		color: #4b5563;
+		color: var(--text-secondary);
 		line-height: 1.6;
 		margin-bottom: 2rem;
 		text-align: center;
 	}
-	.form-wrapper {
-		background-color: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 0.5rem;
-		padding: 2rem 1rem;
-	}
+
 	.contact-form {
 		max-width: 600px;
 		margin: 0 auto;
-		background-color: #ffffff;
+		background-color: var(--bg-secondary);
 		padding: 2rem;
-		border-radius: 8px;
-		border: 1px solid #e5e7eb;
+		border-radius: var(--radius-md);
+		border: 1px solid var(--border-default);
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 	}
+
 	.form-group {
 		margin-bottom: 1.5rem;
 	}
+
 	.form-group label {
 		display: block;
 		margin-bottom: 0.5rem;
-		color: #374151;
+		color: var(--text-primary);
 		font-weight: 600;
 	}
+
 	.form-group input,
 	.form-group textarea {
 		width: 100%;
 		padding: 0.75rem;
-		border: 1px solid #d1d5db;
-		border-radius: 4px;
-		font-family: inherit;
+		border: 1px solid var(--border-default);
+		border-radius: var(--radius-sm);
+		font-family: var(--font-body);
 		font-size: 1rem;
 		box-sizing: border-box;
-		transition: border-color 0.3s ease, box-shadow 0.3s ease;
+		background-color: var(--bg-primary);
+		color: var(--text-primary);
 	}
+
+	@media (prefers-reduced-motion: no-preference) {
+		.form-group input,
+		.form-group textarea {
+			transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+		}
+	}
+
 	.form-group input:focus,
 	.form-group textarea:focus {
 		outline: none;
-		border-color: #2d5a27;
-		box-shadow: 0 0 0 3px rgba(45, 90, 39, 0.1);
+		border-color: var(--accent-green);
+		box-shadow: 0 0 0 3px var(--accent-green-soft);
 	}
+
+	.link-privacitat {
+		color: var(--accent-green);
+		text-decoration: underline;
+	}
+
 	.submit-btn {
 		width: 100%;
-		background-color: #2d5a27;
-		color: white;
+		background-color: var(--accent-green);
+		color: var(--bg-primary);
 		padding: 0.75rem 1.5rem;
 		font-size: 1.1rem;
 		font-weight: bold;
 		border: none;
-		border-radius: 4px;
+		border-radius: var(--radius-sm);
 		cursor: pointer;
-		transition: background-color 0.3s ease;
-	}
-	.submit-btn:hover {
-		background-color: #1f3f1b;
+		font-family: var(--font-body);
 	}
 
-    .privacy-group {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
-}
-.privacy-group input {
-    width: auto;
-    margin-top: 0.3rem;
-}
-.privacy-group label {
-    font-weight: normal;
-    color: #4b5563;
-    margin-bottom: 0;
-}
+	@media (prefers-reduced-motion: no-preference) {
+		.submit-btn {
+			transition: background-color 150ms ease-out, transform 150ms ease-out;
+		}
 
+		.submit-btn:hover {
+			background-color: var(--accent-green-hover);
+			transform: translateY(-1px);
+		}
+
+		.submit-btn:active {
+			transform: scale(0.98);
+		}
+	}
+
+	.privacy-group {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.5rem;
+	}
+
+	.privacy-group input {
+		width: auto;
+		margin-top: 0.3rem;
+	}
+
+	.privacy-group label {
+		font-weight: normal;
+		color: var(--text-secondary);
+		margin-bottom: 0;
+	}
 </style>

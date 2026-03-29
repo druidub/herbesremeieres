@@ -1,6 +1,6 @@
 ---
 import axios from 'axios';
-import Layout from '../../layouts/Layout.astro'; 
+import Layout from '../../layouts/Layout.astro';
 import { Image } from 'astro:assets';
 
 export async function getStaticPaths() {
@@ -25,7 +25,7 @@ export async function getStaticPaths() {
   const totesLesPlantes = resposta.data?.data?.plantes?.nodes || [];
 
   return totesLesPlantes.map((plantaActual) => {
-    
+
     // 1. Quines propietats té aquesta planta? (ex: ['Antisèptica', 'Digestiva'])
     const propietatsActuals = plantaActual.propietats?.nodes?.map(p => p.name) || [];
 
@@ -33,7 +33,7 @@ export async function getStaticPaths() {
     const plantesRelacionades = totesLesPlantes.filter(altraPlanta => {
       // Excloem la planta actual perquè no surti a la seva pròpia llista
       if (altraPlanta.slug === plantaActual.slug) return false;
-      
+
       const propietatsAltraPlanta = altraPlanta.propietats?.nodes?.map(p => p.name) || [];
       // Retorna 'true' si troba alguna propietat en comú
       return propietatsActuals.some(prop => propietatsAltraPlanta.includes(prop));
@@ -52,8 +52,8 @@ const { planta, relacionades = [] } = Astro.props;
 ---
 
 <Layout title={`${planta.title} - Herbes Remeieres`}>
-  
-  <a href="/cataleg" class="boto-tornar">&larr; Tornar al catàleg</a>
+
+  <a href="/cataleg" class="boto-tornar">&larr; Tornar a l'herbari</a>
 
   <div class="capcalera">
     {planta.featuredImage?.node && (
@@ -62,7 +62,7 @@ const { planta, relacionades = [] } = Astro.props;
     <div>
       <h1>{planta.title}</h1>
       <p class="nom-cientific">{planta.dadesBotaniques?.nomCientific}</p>
-      
+
       <div class="etiquetes-container">
         {planta.propietats?.nodes?.map((prop) => (
           <span class="etiqueta propietat">{prop.name}</span>
@@ -74,7 +74,7 @@ const { planta, relacionades = [] } = Astro.props;
   <div class="contingut-extra">
     <h2>Usos Medicinals</h2>
     <div set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} />
-    
+
     {planta.content && (
       <>
         <hr class="separador" />
@@ -84,7 +84,7 @@ const { planta, relacionades = [] } = Astro.props;
     )}
   </div>
 
-  {/* NOU: Secció de Plantes Relacionades */}
+  {/* Secció de Plantes Relacionades */}
   {relacionades.length > 0 && (
     <div class="seccio-relacionades">
       <h3>🌿 Altres plantes que et poden interessar...</h3>
@@ -104,30 +104,139 @@ const { planta, relacionades = [] } = Astro.props;
 </Layout>
 
 <style>
-  /* Estils originals de la fitxa */
-  .capcalera { display: flex; align-items: center; gap: 2rem; margin-bottom: 2rem; }
-  .capcalera img { width: 300px; height: 300px; object-fit: cover; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-  h1 { color: #2d5a27; font-size: 3rem; margin-bottom: 0.5rem; margin-top: 0; }
-  .nom-cientific { font-style: italic; color: #666; font-size: 1.2rem; margin-top: 0; }
-  
-  .etiquetes-container { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem; }
-  .etiqueta { padding: 0.3rem 0.8rem; border-radius: 99px; font-size: 0.9rem; font-weight: bold; }
-  .etiqueta.propietat { background: #eef2eb; color: #2d5a27; }
-  
-  .contingut-extra { background: white; padding: 2rem; border-radius: 12px; border: 1px solid #e5e5e5; margin-top: 2rem; }
-  .boto-tornar { display: inline-block; margin-bottom: 2rem; color: #2d5a27; text-decoration: none; font-weight: bold; }
-  .boto-tornar:hover { text-decoration: underline; }
-  .separador { margin: 2rem 0; border-top: 1px solid #eee; border-bottom: none; }
+  .capcalera {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    margin-bottom: 2rem;
+  }
 
-  /* NOU: Estils per a les plantes relacionades */
-  .seccio-relacionades { margin-top: 4rem; border-top: 2px dashed #e5e5e5; padding-top: 2rem; }
-  .seccio-relacionades h3 { color: #2d5a27; margin-bottom: 1.5rem; }
-  .graella-relacionades { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.5rem; }
-  
-  .targeta-relacionada { text-decoration: none; color: inherit; background: white; padding: 1rem; border-radius: 8px; border: 1px solid #eee; transition: transform 0.2s, box-shadow 0.2s; display: block; }
-  .targeta-relacionada:hover { transform: translateY(-5px); box-shadow: 0 6px 12px rgba(0,0,0,0.08); }
-  .targeta-relacionada img { width: 100%; height: 140px; object-fit: cover; border-radius: 6px; margin-bottom: 0.8rem; }
-  .targeta-relacionada h4 { margin: 0; color: #333; font-size: 1.1rem; }
+  .capcalera img {
+    width: 300px;
+    height: 300px;
+    object-fit: cover;
+    border-radius: var(--radius-md);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+
+  h1 {
+    color: var(--text-primary);
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+  }
+
+  .nom-cientific {
+    font-style: italic;
+    color: var(--accent-green);
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    margin-top: 0;
+  }
+
+  .etiquetes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .etiqueta {
+    padding: 0.3rem 0.8rem;
+    border-radius: 99px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+  }
+
+  .etiqueta.propietat {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  .contingut-extra {
+    background: var(--bg-secondary);
+    padding: 2rem;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-default);
+    margin-top: 2rem;
+  }
+
+  .boto-tornar {
+    display: inline-block;
+    margin-bottom: 2rem;
+    color: var(--accent-green);
+    text-decoration: none;
+    font-weight: bold;
+    font-family: var(--font-body);
+  }
+
+  .boto-tornar:hover {
+    text-decoration: underline;
+  }
+
+  .separador {
+    margin: 2rem 0;
+    border-top: 1px solid var(--border-subtle);
+    border-bottom: none;
+  }
+
+  .seccio-relacionades {
+    margin-top: 4rem;
+    border-top: 2px dashed var(--border-default);
+    padding-top: 2rem;
+  }
+
+  .seccio-relacionades h3 {
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+  }
+
+  .graella-relacionades {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .targeta-relacionada {
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    display: block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .targeta-relacionada {
+      transition: transform 200ms ease-out, box-shadow 200ms ease-out, border-color 200ms ease-out;
+    }
+
+    .targeta-relacionada:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.08);
+      border-color: var(--accent-green);
+    }
+
+    .targeta-relacionada:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .targeta-relacionada img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 0.8rem;
+  }
+
+  .targeta-relacionada h4 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.1rem;
+  }
 
   @media (max-width: 768px) {
     .capcalera { flex-direction: column; align-items: flex-start; gap: 1rem; }

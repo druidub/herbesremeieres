@@ -3,19 +3,19 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="Inici - Herbes Remeieres">
-  
+
   <section class="hero">
     <div class="hero-contingut">
       <span class="etiqueta-intro">Projecte de divulgació</span>
       <h1>Recuperant la saviesa de la terra</h1>
       <p>Herbes Remeieres és una iniciativa dedicada a preservar, classificar i compartir el coneixement tradicional de les plantes medicinals i l'etnobotànica per a les futures generacions.</p>
-      
+
       <div class="botons">
-        <a href="/cataleg" class="boto boto-primari">Explorar el Catàleg &rarr;</a>
+        <a href="/cataleg" class="boto boto-primari">Explorar l'Herbari &rarr;</a>
         <a href="#projecte" class="boto boto-secundari">Coneix la iniciativa</a>
       </div>
     </div>
-    
+
     <div class="hero-imatge">
       <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1200&q=80" alt="Camps de plantes medicinals i flors" />
     </div>
@@ -50,7 +50,7 @@ import Layout from '../layouts/Layout.astro';
     min-height: 75vh;
     padding-top: 2rem;
   }
-  
+
   .hero-contingut {
     flex: 1;
     max-width: 600px;
@@ -58,8 +58,8 @@ import Layout from '../layouts/Layout.astro';
 
   .etiqueta-intro {
     display: inline-block;
-    background: #eef2eb;
-    color: #2d5a27;
+    background: var(--tag-bg);
+    color: var(--tag-text);
     padding: 0.4rem 1rem;
     border-radius: 99px;
     font-weight: 700;
@@ -72,14 +72,14 @@ import Layout from '../layouts/Layout.astro';
   .hero h1 {
     font-size: 3.9rem;
     line-height: 1.1;
-    color: #1a3a16;
+    color: var(--text-primary);
     margin-bottom: 1.5rem;
     margin-top: 0;
   }
 
   .hero p {
     font-size: 1.2rem;
-    color: #555;
+    color: var(--text-secondary);
     margin-bottom: 2.5rem;
     line-height: 1.8;
   }
@@ -92,33 +92,22 @@ import Layout from '../layouts/Layout.astro';
 
   .boto {
     padding: 1rem 2rem;
-    border-radius: 8px;
+    border-radius: var(--radius-sm);
     font-weight: 600;
     font-size: 1.1rem;
     text-decoration: none;
-    transition: all 0.3s ease;
   }
 
   .boto-primari {
-    background: #2d5a27;
-    color: white;
-    box-shadow: 0 4px 14px rgba(45, 90, 39, 0.3);
-  }
-
-  .boto-primari:hover {
-    background: #1f421b;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(45, 90, 39, 0.4);
+    background: var(--accent-green);
+    color: var(--bg-primary);
+    box-shadow: 0 4px 14px var(--accent-green-soft);
   }
 
   .boto-secundari {
     background: transparent;
-    color: #2d5a27;
-    border: 2px solid #2d5a27;
-  }
-
-  .boto-secundari:hover {
-    background: #eef2eb;
+    color: var(--accent-green);
+    border: 2px solid var(--accent-green);
   }
 
   .hero-imatge {
@@ -132,12 +121,6 @@ import Layout from '../layouts/Layout.astro';
     object-fit: cover;
     border-radius: 24px;
     box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
-    animation: flotar 6s ease-in-out infinite alternate;
-  }
-
-  @keyframes flotar {
-    0% { transform: translateY(0px); }
-    100% { transform: translateY(-15px); }
   }
 
   /* --- VALORS (FUNDACIÓ) --- */
@@ -148,20 +131,15 @@ import Layout from '../layouts/Layout.astro';
     margin-top: 5rem;
     margin-bottom: 5rem;
     padding-top: 5rem;
-    border-top: 1px solid #eaeaea;
+    border-top: 1px solid var(--border-default);
   }
 
   .valor {
-    background: white;
+    background: var(--bg-secondary);
     padding: 2.5rem;
-    border-radius: 16px;
-    border: 1px solid #f1f1f1;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
     box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05);
-    transition: transform 0.3s ease;
-  }
-
-  .valor:hover {
-    transform: translateY(-10px);
   }
 
   .icona {
@@ -170,15 +148,53 @@ import Layout from '../layouts/Layout.astro';
   }
 
   .valor h2 {
-    color: #2d5a27;
+    color: var(--accent-green);
     margin-top: 0;
     margin-bottom: 1rem;
     font-size: 1.5rem;
   }
 
   .valor p {
-    color: #666;
+    color: var(--text-secondary);
     margin: 0;
+  }
+
+  /* --- ANIMACIONS --- */
+  @media (prefers-reduced-motion: no-preference) {
+    .boto {
+      transition: background 150ms ease-out, color 150ms ease-out, transform 150ms ease-out;
+    }
+
+    .boto-primari:hover {
+      background: var(--accent-green-hover);
+      transform: translateY(-2px);
+    }
+
+    .boto-primari:active {
+      transform: scale(0.98);
+    }
+
+    .boto-secundari:hover {
+      background: var(--tag-bg);
+    }
+
+    .hero-imatge img {
+      animation: flotar 6s ease-in-out infinite alternate;
+    }
+
+    .valor {
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
+    }
+
+    .valor:hover {
+      transform: translateY(-6px);
+      border-color: var(--accent-green);
+    }
+
+    @keyframes flotar {
+      0% { transform: translateY(0px); }
+      100% { transform: translateY(-15px); }
+    }
   }
 
   /* --- RESPONSIVE PER MÒBILS --- */

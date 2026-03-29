@@ -3,12 +3,33 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="El Projecte | Herbes Remeieres">
-	<main class="max-w-4xl mx-auto px-4 py-12">
-		<h1 class="text-4xl font-bold text-verd-fosc mb-6">El Nostre Projecte</h1>
-		<p class="text-lg text-gray-700 leading-relaxed">
-			Aquesta pàgina està en construcció. Aquí explicarem la història de com 
-			recuperem la saviesa ancestral de la nostra terra i la importància de 
+	<div class="projecte-container">
+		<h1>El Nostre Projecte</h1>
+		<p>
+			Aquesta pàgina està en construcció. Aquí explicarem la història de com
+			recuperem la saviesa ancestral de la nostra terra i la importància de
 			les herbes remeieres.
 		</p>
-	</main>
+	</div>
 </Layout>
+
+<style>
+	.projecte-container {
+		max-width: var(--content-narrow);
+		margin: 0 auto;
+		padding: var(--sp-7) var(--sp-4);
+	}
+
+	.projecte-container h1 {
+		font-size: 2.5rem;
+		color: var(--text-primary);
+		margin-bottom: var(--sp-5);
+		margin-top: 0;
+	}
+
+	.projecte-container p {
+		font-size: 1.125rem;
+		color: var(--text-secondary);
+		line-height: 1.7;
+	}
+</style>

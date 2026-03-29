@@ -10,7 +10,7 @@ let familiesUniques = [];
 let afeccionsUniques = []; // NOU: Declarem la variable aquí dalt
 
 try {
-  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, { 
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
     query: `
       query ObtenirPlantes {
         plantes(first: 100) {
@@ -28,7 +28,7 @@ try {
                 name
               }
             }
-            familiesBotaniques { 
+            familiesBotaniques {
               nodes {
                 name
               }
@@ -49,17 +49,17 @@ try {
       }
     `
   });
-  
+
   llistaPlantes = resposta.data?.data?.plantes?.nodes || [];
 
   // Extraiem Propietats úniques
-  const totesLesPropietats = llistaPlantes.flatMap(planta => 
+  const totesLesPropietats = llistaPlantes.flatMap(planta =>
     planta.propietats?.nodes?.map(prop => prop.name) || []
   );
   propietatsUniques = [...new Set(totesLesPropietats)].sort();
 
   // Extraiem Famílies úniques
-  const totesLesFamilies = llistaPlantes.flatMap(planta => 
+  const totesLesFamilies = llistaPlantes.flatMap(planta =>
     planta.familiesBotaniques?.nodes?.map(fam => fam.name) || []
   );
   familiesUniques = [...new Set(totesLesFamilies)].sort();
@@ -81,21 +81,21 @@ try {
 }
 ---
 
-<Layout title="Catàleg - Herbolari Arrel Digital">
-  
+<Layout title="Herbari - Herbolari Arrel Digital">
+
   <div class="capcalera-cataleg">
-    <h1>Catàleg de Plantes</h1>
-    
+    <h1>Herbari</h1>
+
     {!missatgeError && (
       <div class="panell-filtres">
-        
+
         <div class="grup-filtre" style="flex-grow: 2;">
           <label for="cercador-text">Buscar planta:</label>
-          <input 
-            type="text" 
-            id="cercador-text" 
-            class="desplegable input-cerca" 
-            placeholder="Escriu un nom o nom científic..." 
+          <input
+            type="text"
+            id="cercador-text"
+            class="desplegable input-cerca"
+            placeholder="Escriu un nom o nom científic..."
           />
         </div>
 
@@ -156,19 +156,19 @@ try {
         const llistaAfeccions = planta.afeccions?.nodes?.map(a => a.slug).join(' ') || '';
 
         return (
-          <article 
-            class="planta-card" 
+          <article
+            class="planta-card"
             data-titol={planta.title}
             data-cientific={planta.dadesBotaniques?.nomCientific || ''}
             data-alternatius={planta.dadesBotaniques?.altresNomsComuns || ''}
             data-propietats={llistaProps}
             data-families={llistaFams}
-            data-afeccions={llistaAfeccions} 
+            data-afeccions={llistaAfeccions}
           >
             {planta.featuredImage?.node && (
               <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} width={1024} height={768} />
             )}
-            
+
             <div class="etiquetes-container">
               {planta.familiesBotaniques?.nodes?.map((fam) => <span class="etiqueta familia">{fam.name}</span>)}
               {planta.propietats?.nodes?.map((prop) => <span class="etiqueta propietat">{prop.name}</span>)}
@@ -178,7 +178,7 @@ try {
             <small>També coneguda com: {planta.dadesBotaniques?.altresNomsComuns}</small>
             <p><strong>Nom científic:</strong><em> {planta.dadesBotaniques?.nomCientific || 'Sense classificar'}</em></p>
             <p><strong>Usos:</strong> <span set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} /></p>
-          
+
             <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més &rarr;</a>
           </article>
         )
@@ -188,49 +188,202 @@ try {
 </Layout>
 
 <style>
-  .capcalera-cataleg { margin-bottom: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 1.5rem; }
-  .capcalera-cataleg h1 { color: #2d5a27; margin-top: 0; margin-bottom: 1.5rem; }
-  .panell-filtres { display: flex; gap: 1.5rem; flex-wrap: wrap; background: white; padding: 1rem; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
-  .grup-filtre { display: flex; flex-direction: column; gap: 0.3rem; flex-grow: 1; min-width: 150px; }
-  .grup-filtre label { font-size: 0.85rem; font-weight: bold; color: #555; }
-  .desplegable { padding: 0.6rem; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; color: #333; background-color: #fdfdf9; cursor: pointer; }
-  .desplegable:focus { outline: none; border-color: #2d5a27; }
-  .input-cerca { cursor: text; }
-  .input-cerca::placeholder { color: #aaa; }
+  .capcalera-cataleg {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-default);
+    padding-bottom: 1.5rem;
+  }
 
-  /* NOU: Estils per als botons d'afeccions */
+  .capcalera-cataleg h1 {
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+  }
+
+  .panell-filtres {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    background: var(--bg-secondary);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 1.5rem;
+  }
+
+  .grup-filtre {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    flex-grow: 1;
+    min-width: 150px;
+  }
+
+  .grup-filtre label {
+    font-size: 0.85rem;
+    font-weight: bold;
+    color: var(--text-secondary);
+  }
+
+  .desplegable {
+    padding: 0.6rem;
+    border: 1px solid var(--border-default);
+    border-radius: 6px;
+    font-size: 1rem;
+    color: var(--text-primary);
+    background-color: var(--bg-primary);
+    cursor: pointer;
+    font-family: var(--font-body);
+  }
+
+  .desplegable:focus {
+    outline: none;
+    border-color: var(--accent-green);
+  }
+
+  .input-cerca { cursor: text; }
+
+  .input-cerca::placeholder {
+    color: var(--text-tertiary);
+  }
+
+  /* Botons d'afeccions */
   .filtres-afeccions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
     margin-top: 1rem;
   }
+
   .btn-filtre {
     padding: 0.4rem 1rem;
-    border: 1px solid #2d5a27;
+    border: 1px solid var(--accent-green);
     background: transparent;
-    color: #2d5a27;
+    color: var(--accent-green);
     border-radius: 50px;
     font-size: 0.9rem;
+    font-family: var(--font-body);
     cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-filtre:hover, .btn-filtre.actiu {
-    background: #2d5a27;
-    color: white;
   }
 
-  .graella { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 2rem; }
-  .planta-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); border: 1px solid #f1f1f1; display: flex; flex-direction: column; }
-  .planta-card img { width: 100%; height: 220px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem; }
-  .planta-card h2 { color: #2d5a27; margin-top: 0; margin-bottom: 0.5rem;}
-  .etiquetes-container { margin-bottom: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
-  .etiqueta { padding: 0.2rem 0.6rem; border-radius: 99px; font-size: 0.75rem; font-weight: bold; }
-  .etiqueta.propietat { background: #eef2eb; color: #2d5a27; }
-  .etiqueta.familia { background: #e0f2fe; color: #0369a1; }
-  .boto-mes { margin-top: auto; padding: 0.5rem 1rem; background: #2d5a27; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; text-align: center; }
-  .boto-mes:hover { background: #1f421b; }
-  .error-box { background: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 8px; border: 1px solid #ef4444; }
+  .btn-filtre:hover,
+  .btn-filtre.actiu {
+    background: var(--accent-green);
+    color: var(--bg-primary);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .btn-filtre {
+      transition: background 150ms ease-out, color 150ms ease-out;
+    }
+  }
+
+  .graella {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  .planta-card {
+    background: var(--bg-secondary);
+    padding: 1.5rem;
+    border-radius: var(--radius-md);
+    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .planta-card {
+      transition: transform 200ms ease-out, border-color 200ms ease-out, box-shadow 200ms ease-out;
+    }
+
+    .planta-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-green);
+    }
+
+    .planta-card:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .planta-card img {
+    width: 100%;
+    height: 220px;
+    object-fit: cover;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+  }
+
+  .planta-card h2 {
+    color: var(--text-primary);
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+  }
+
+  .etiquetes-container {
+    margin-bottom: 0.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .etiqueta {
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    font-family: var(--font-body);
+  }
+
+  .etiqueta.propietat {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  /* Famílies: accent ambre (neutre, dins del sistema) */
+  .etiqueta.familia {
+    background: var(--accent-amber-soft);
+    color: var(--accent-amber-hover);
+  }
+
+  .boto-mes {
+    margin-top: auto;
+    padding: 0.5rem 1rem;
+    background: var(--accent-green);
+    color: var(--bg-primary);
+    text-decoration: none;
+    border-radius: var(--radius-sm);
+    font-weight: bold;
+    text-align: center;
+    font-family: var(--font-body);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .boto-mes {
+      transition: background 150ms ease-out, transform 150ms ease-out;
+    }
+
+    .boto-mes:hover {
+      background: var(--accent-green-hover);
+      transform: translateY(-1px);
+    }
+
+    .boto-mes:active {
+      transform: scale(0.98);
+    }
+  }
+
+  .error-box {
+    background: var(--accent-amber-soft);
+    color: var(--color-danger);
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--color-danger);
+  }
 </style>
 
 <script>
@@ -242,7 +395,7 @@ try {
     const selectFamilia = document.getElementById('filtre-familia');
     const selectOrdre = document.getElementById('ordre-alfabetic');
     const botonsAfeccio = document.querySelectorAll('.btn-filtre'); // NOU
-    
+
     const graella = document.getElementById('graella-plantes');
     if (!graella) return;
 
@@ -257,7 +410,7 @@ try {
         // Traiem la classe 'actiu' a tots i la posem al que hem clicat
         botonsAfeccio.forEach(b => b.classList.remove('actiu'));
         e.target.classList.add('actiu');
-        
+
         // Guardem el filtre actiu i actualitzem la graella
         afeccioActiva = e.target.getAttribute('data-filtre');
         actualitzarGraella();
@@ -274,11 +427,11 @@ try {
         const titol = planta.getAttribute('data-titol').toLowerCase();
         const cientific = planta.getAttribute('data-cientific').toLowerCase();
         const alternatius = planta.getAttribute('data-alternatius')?.toLowerCase() || '';
-        
+
         const dadesProp = planta.getAttribute('data-propietats');
         const dadesFam = planta.getAttribute('data-families');
         const dadesAfecc = planta.getAttribute('data-afeccions') || ''; // NOU
-        
+
         const compleixText = textCercat === '' || titol.includes(textCercat) || cientific.includes(textCercat) || alternatius.includes(textCercat);
         const compleixProp = propActiva === 'totes' || dadesProp.includes(propActiva);
         const compleixFam = famActiva === 'totes' || dadesFam.includes(famActiva);
