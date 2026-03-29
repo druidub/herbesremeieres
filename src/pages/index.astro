@@ -1,220 +1,1018 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import axios from 'axios';
+
+let plantesDestacades = [];
+try {
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+    query: `
+      query ObtenirPlantes {
+        plantes(first: 100) {
+          nodes {
+            slug
+            title
+            featuredImage {
+              node {
+                sourceUrl
+                altText
+              }
+            }
+            propietats {
+              nodes { name }
+            }
+            familiesBotaniques {
+              nodes { name }
+            }
+            dadesBotaniques {
+              nomCientific
+              usosMedicinals
+            }
+          }
+        }
+      }
+    `
+  });
+  const totes = resposta.data?.data?.plantes?.nodes || [];
+  for (let i = totes.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [totes[i], totes[j]] = [totes[j], totes[i]];
+  }
+  plantesDestacades = totes.slice(0, 4);
+} catch (e) {
+  // silenci: si falla, la secció no es mostra
+}
 ---
 
 <Layout title="Inici - Herbes Remeieres">
 
   <section class="hero">
-    <div class="hero-contingut">
-      <span class="etiqueta-intro">Projecte de divulgació</span>
-      <h1>Recuperant la saviesa de la terra</h1>
-      <p>Herbes Remeieres és una iniciativa dedicada a preservar, classificar i compartir el coneixement tradicional de les plantes medicinals i l'etnobotànica per a les futures generacions.</p>
 
-      <div class="botons">
-        <a href="/cataleg" class="boto boto-primari">Explorar l'Herbari &rarr;</a>
-        <a href="#projecte" class="boto boto-secundari">Coneix la iniciativa</a>
-      </div>
+    <!-- Decoració de fons: 5 corbes orgàniques tipo tiges de planta -->
+    <svg class="hero-decoracio" viewBox="0 0 1440 600" preserveAspectRatio="none" fill="none" aria-hidden="true" focusable="false">
+      <!-- Tija 1: ondulada baixa, travessa tot l'ample -->
+      <path d="M-20,480 C180,380 320,520 520,420 C680,340 820,460 1020,380 C1180,320 1300,420 1460,360" stroke="currentColor" stroke-width="1.5"/>
+      <!-- Fulla de la tija 1 -->
+      <path d="M520,420 C540,390 570,380 580,400" stroke="currentColor" stroke-width="1"/>
+      <path d="M820,440 C845,415 870,410 875,430" stroke="currentColor" stroke-width="1"/>
+
+      <!-- Tija 2: alta, corba inversa -->
+      <path d="M-20,120 C200,200 380,80 620,160 C820,230 980,100 1200,180 C1320,220 1400,150 1460,140" stroke="currentColor" stroke-width="1"/>
+      <!-- Fulla de la tija 2 -->
+      <path d="M380,80 C360,55 340,50 345,75" stroke="currentColor" stroke-width="0.8"/>
+      <path d="M980,100 C960,72 940,70 950,95" stroke="currentColor" stroke-width="0.8"/>
+
+      <!-- Tija 3: diagonal suau -->
+      <path d="M-20,280 C280,220 560,320 820,240 C1020,180 1240,280 1460,220" stroke="currentColor" stroke-width="2"/>
+      <!-- Fulles tija 3 -->
+      <path d="M280,220 C300,192 330,188 328,212" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M560,320 C580,292 608,285 605,310" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M1020,180 C1040,152 1068,148 1064,172" stroke="currentColor" stroke-width="1.2"/>
+
+      <!-- Tija 4: quasi horitzontal, molt subtil -->
+      <path d="M-20,560 C360,540 720,570 1080,545 C1260,533 1380,550 1460,542" stroke="currentColor" stroke-width="0.8"/>
+
+      <!-- Tija 5: arc llarg pel mig -->
+      <path d="M-20,380 C320,280 680,440 1020,320 C1200,260 1360,340 1460,300" stroke="currentColor" stroke-width="1.2"/>
+      <path d="M680,440 C700,412 728,406 724,432" stroke="currentColor" stroke-width="0.9"/>
+    </svg>
+
+    <!-- Planta decorativa esquerra (semiparcialment visible) -->
+    <div class="planta-marge planta-marge-esquerra" aria-hidden="true">
+      <img src="/il·lustracions/dibuix-pota-cavall.svg" alt="" width="200" height="250" />
     </div>
 
-    <div class="hero-imatge">
-      <img src="https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1200&q=80" alt="Camps de plantes medicinals i flors" />
+    <!-- Planta decorativa dreta -->
+    <div class="planta-marge planta-marge-dreta" aria-hidden="true">
+      <img src="/il·lustracions/dibuix-hiperic.svg" alt="" width="200" height="250" />
+    </div>
+
+    <div class="hero-contingut">
+      <p class="etiqueta-region">Herbari Digital · Bages i Moianès</p>
+
+      <h1>Recuperant la saviesa<br>de la terra</h1>
+
+      <p class="subtitol">Plantes medicinals, remeis ancestrals i el coneixement etnobotànic del Bages i el Moianès que no podem deixar perdre.</p>
+
+      <div class="botons">
+        <a href="/cataleg" class="boto boto-primari">Explorar l'herbari</a>
+        <a href="/projecte" class="boto boto-secundari">Coneix el projecte</a>
+      </div>
+
+      <div class="plantes-botaniques">
+
+        <div class="planta-item planta-1">
+          <div class="planta-imatge-wrap">
+            <img src="/il·lustracions/dibuix-camamilla.svg" alt="Il·lustració de camamilla" class="planta-img" width="90" height="110" />
+          </div>
+          <span class="planta-nom">Camamilla</span>
+        </div>
+
+        <div class="planta-item planta-2">
+          <div class="planta-imatge-wrap">
+            <img src="/il·lustracions/dibuix-dent-lleo.svg" alt="Il·lustració de dent de lleó" class="planta-img" width="90" height="110" />
+          </div>
+          <span class="planta-nom">Dent de lleó</span>
+        </div>
+
+        <div class="planta-item planta-3">
+          <div class="planta-imatge-wrap">
+            <img src="/il·lustracions/dibuix-hiperic.svg" alt="Il·lustració d'hipèric" class="planta-img" width="90" height="110" />
+          </div>
+          <span class="planta-nom">Hipèric</span>
+        </div>
+
+        <div class="planta-item planta-4">
+          <div class="planta-imatge-wrap">
+            <img src="/il·lustracions/dibuix-pimpinella.svg" alt="Il·lustració de pimpinella" class="planta-img" width="90" height="110" />
+          </div>
+          <span class="planta-nom">Pimpinella</span>
+        </div>
+
+        <div class="planta-item planta-5">
+          <div class="planta-imatge-wrap">
+            <img src="/il·lustracions/dibuix-plantatge-fulla-gran.svg" alt="Il·lustració de plantatge" class="planta-img" width="90" height="110" />
+          </div>
+          <span class="planta-nom">Plantatge</span>
+        </div>
+
+      </div>
     </div>
   </section>
 
-  <section id="projecte" class="valors-container">
-    <div class="valor">
-      <div class="icona">🌿</div>
+  <section class="valors-container">
+
+    <article class="valor">
+      <div class="valor-icona">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="16" y1="29" x2="16" y2="7"/>
+          <path d="M16 21 C11 17 6 13 9 8 C11 4 16 7 16 13"/>
+          <path d="M16 15 C21 11 26 7 23 3"/>
+        </svg>
+      </div>
       <h2>Tradició Viva</h2>
       <p>Documentem els usos populars i els remeis ancestrals abans que es perdin en l'oblit i la memòria.</p>
-    </div>
-    <div class="valor">
-      <div class="icona">🔬</div>
+    </article>
+
+    <article class="valor">
+      <div class="valor-icona">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="13" cy="13" r="9"/>
+          <line x1="20" y1="20" x2="28" y2="28"/>
+          <path d="M10 13 C10 9 14 8 17 11"/>
+        </svg>
+      </div>
       <h2>Rigor Botànic</h2>
       <p>Classifiquem cada espècie amb la seva taxonomia exacta i creuem dades amb estudis científics moderns.</p>
-    </div>
-    <div class="valor">
-      <div class="icona">🤝</div>
+    </article>
+
+    <article class="valor">
+      <div class="valor-icona">
+        <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="16" cy="7" r="3.5"/>
+          <circle cx="7" cy="24" r="3.5"/>
+          <circle cx="25" cy="24" r="3.5"/>
+          <line x1="13.5" y1="10" x2="9" y2="20.5"/>
+          <line x1="18.5" y1="10" x2="23" y2="20.5"/>
+          <line x1="10.5" y1="24" x2="21.5" y2="24"/>
+        </svg>
+      </div>
       <h2>Comunitat</h2>
       <p>Una plataforma digital oberta i accessible per aprendre i reconnectar amb el nostre entorn natural proper.</p>
+    </article>
+
+  </section>
+
+  <!-- ═══ SECCIÓ 1: PLANTES DESTACADES ═══ -->
+  {plantesDestacades.length > 0 && (
+    <section class="seccio-destacades observable">
+      <div class="seccio-inner">
+        <header class="seccio-cap">
+          <h2>Descobreix les nostres plantes</h2>
+          <p class="seccio-subtitol">Cada visita et porta plantes diferents</p>
+        </header>
+
+        <div class="grid-plantes">
+          {plantesDestacades.map((planta) => (
+            <article class="card-planta">
+              {planta.featuredImage?.node && (
+                <div class="card-img-wrap">
+                  <img
+                    src={planta.featuredImage.node.sourceUrl}
+                    alt={planta.featuredImage.node.altText || planta.title}
+                    loading="lazy"
+                    width="400"
+                    height="300"
+                  />
+                </div>
+              )}
+              <div class="card-cos">
+                {planta.familiesBotaniques?.nodes?.[0] && (
+                  <p class="card-familia">{planta.familiesBotaniques.nodes[0].name}</p>
+                )}
+                <h3>{planta.title}</h3>
+                {planta.dadesBotaniques?.nomCientific && (
+                  <p class="scientific-name">{planta.dadesBotaniques.nomCientific}</p>
+                )}
+                {planta.propietats?.nodes?.length > 0 && (
+                  <div class="card-tags">
+                    {planta.propietats.nodes.slice(0, 3).map((prop) => (
+                      <span class="tag">{prop.name}</span>
+                    ))}
+                  </div>
+                )}
+                <a href={`/planta/${planta.slug}`} class="card-link">Saber-ne més &rarr;</a>
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <!-- ═══ SECCIÓ 2: EXPLORA PER AFECCIÓ ═══ -->
+  <section class="seccio-afeccions observable">
+    <div class="seccio-inner">
+      <header class="seccio-cap">
+        <h2>Quin malestar vols alleujar?</h2>
+        <p class="seccio-subtitol">Troba plantes per al que necessites</p>
+      </header>
+
+      <div class="grid-afeccions">
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <ellipse cx="16" cy="17" rx="9" ry="10"/>
+            <path d="M12 14 C13 11 19 11 20 14"/>
+            <path d="M13 19 C14 22 18 22 19 19"/>
+          </svg>
+          <span class="afeccio-nom">Sistema digestiu i fetge</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 6 C16 6 10 10 9 16 C8 22 12 26 12 26"/>
+            <path d="M16 6 C16 6 22 10 23 16 C24 22 20 26 20 26"/>
+            <line x1="12" y1="15" x2="20" y2="15"/>
+            <line x1="11" y1="19" x2="21" y2="19"/>
+          </svg>
+          <span class="afeccio-nom">Sistema respiratori</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 8 A9 9 0 1 1 13 27"/>
+            <circle cx="9" cy="9" r="1.2" fill="currentColor"/>
+            <circle cx="15" cy="5" r="1" fill="currentColor"/>
+            <circle cx="22" cy="6" r="0.8" fill="currentColor"/>
+          </svg>
+          <span class="afeccio-nom">Sistema nerviós i son</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M16 5 C16 5 24 14 24 20 C24 25 20 27 16 27 C12 27 8 25 8 20 C8 14 16 5 16 5Z"/>
+          </svg>
+          <span class="afeccio-nom">Pell i cicatrització</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="7" cy="7" r="4"/>
+            <circle cx="25" cy="25" r="4"/>
+            <line x1="10" y1="10" x2="22" y2="22"/>
+            <line x1="7" y1="3" x2="7" y2="4"/>
+            <line x1="25" y1="28" x2="25" y2="29"/>
+          </svg>
+          <span class="afeccio-nom">Ossos, músculs i articulacions</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="16" cy="16" r="4"/>
+            <path d="M16 5 C17.5 9 19 10 16 12"/>
+            <path d="M16 5 C14.5 9 13 10 16 12"/>
+            <path d="M27 16 C23 17.5 22 19 20 16"/>
+            <path d="M27 16 C23 14.5 22 13 20 16"/>
+            <path d="M16 27 C14.5 23 13 22 16 20"/>
+            <path d="M16 27 C17.5 23 19 22 16 20"/>
+            <path d="M5 16 C9 14.5 10 13 12 16"/>
+            <path d="M5 16 C9 17.5 10 19 12 16"/>
+          </svg>
+          <span class="afeccio-nom">Salut femenina</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="16" cy="16" r="5"/>
+            <line x1="16" y1="3" x2="16" y2="7"/>
+            <line x1="16" y1="25" x2="16" y2="29"/>
+            <line x1="3" y1="16" x2="7" y2="16"/>
+            <line x1="25" y1="16" x2="29" y2="16"/>
+            <line x1="7.1" y1="7.1" x2="9.9" y2="9.9"/>
+            <line x1="22.1" y1="22.1" x2="24.9" y2="24.9"/>
+            <line x1="24.9" y1="7.1" x2="22.1" y2="9.9"/>
+            <line x1="9.9" y1="22.1" x2="7.1" y2="24.9"/>
+          </svg>
+          <span class="afeccio-nom">Vitalitat i nutrició</span>
+        </a>
+
+        <a href="/cataleg" class="card-afeccio">
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 6 C10 6 6 12 8 17 C10 22 14 22 16 20"/>
+            <path d="M22 6 C22 6 26 12 24 17 C22 22 18 22 16 20"/>
+            <path d="M16 20 C16 23 16 25 16 27"/>
+            <path d="M16 24 C14 22 12 21 13 23 C14 25 16 27 16 27"/>
+          </svg>
+          <span class="afeccio-nom">Depuració i sistema urinari</span>
+        </a>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SECCIÓ 3: SOBRE EL PROJECTE ═══ -->
+  <section class="seccio-projecte observable">
+    <div class="seccio-projecte-inner">
+      <p class="etiqueta-seccio">El Projecte</p>
+      <h2>Preservem el coneixement de la nostra terra</h2>
+      <p class="projecte-text">Les herbes remeieres formen part del nostre patrimoni natural i etnogràfic. Des del Bages i el Moianès, documentem la saviesa que les generacions anteriors ens han transmès de viva veu, abans que es perdi per sempre.</p>
+      <a href="/projecte" class="boto boto-secundari">Coneix el projecte &rarr;</a>
     </div>
   </section>
 
 </Layout>
 
 <style>
-  /* --- HERO SECTION --- */
+  /* ─── HERO ──────────────────────────────────────── */
   .hero {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 3.5rem;
-    min-height: 75vh;
-    padding-top: 2rem;
+    justify-content: center;
+    min-height: 90vh;
+    text-align: center;
+    overflow: hidden;
+    /* Trenca el contenidor max-width del <main> per ocupar tot l'ample del viewport */
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
   }
 
+  /* ─── DECORACIÓ DE FONS ─────────────────────────── */
+  .hero-decoracio {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    color: var(--accent-green);
+    opacity: 0.055;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ─── PLANTES ALS MARGES ────────────────────────── */
+  .planta-marge {
+    position: absolute;
+    bottom: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .planta-marge img {
+    height: 240px;
+    width: auto;
+    opacity: 0.1;
+    display: block;
+  }
+
+  .planta-marge-esquerra {
+    left: -70px;
+  }
+
+  .planta-marge-dreta {
+    right: -60px;
+    transform: scaleX(-1);
+  }
+
+  /* Mode fosc: invertir les il·lustracions dels marges */
+  :global([data-theme="dark"]) .planta-marge img {
+    filter: brightness(0) invert(1) opacity(0.55);
+  }
+
+  /* ─── CONTINGUT HERO ────────────────────────────── */
   .hero-contingut {
-    flex: 1;
-    max-width: 600px;
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 3rem 1.5rem;
+    width: 100%;
   }
 
-  .etiqueta-intro {
-    display: inline-block;
-    background: var(--tag-bg);
-    color: var(--tag-text);
-    padding: 0.4rem 1rem;
-    border-radius: 99px;
-    font-weight: 700;
-    font-size: 0.9rem;
-    letter-spacing: 1px;
+  /* ─── TIPOGRAFIA HERO ───────────────────────────── */
+  .etiqueta-region {
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--text-tertiary);
     text-transform: uppercase;
-    margin-bottom: 1.5rem;
+    margin: 0 0 var(--sp-5) 0;
   }
 
-  .hero h1 {
-    font-size: 3.9rem;
+  .hero-contingut h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 6vw, 3.5rem);
+    font-weight: 400;
+    letter-spacing: -0.03em;
     line-height: 1.1;
     color: var(--text-primary);
-    margin-bottom: 1.5rem;
-    margin-top: 0;
+    max-width: 650px;
+    margin: 0 0 var(--sp-5) 0;
   }
 
-  .hero p {
-    font-size: 1.2rem;
+  .subtitol {
+    font-family: var(--font-body);
+    font-size: 16px;
     color: var(--text-secondary);
-    margin-bottom: 2.5rem;
-    line-height: 1.8;
+    max-width: 480px;
+    line-height: 1.7;
+    margin: 0 0 var(--sp-6) 0;
   }
 
+  /* ─── BOTONS ────────────────────────────────────── */
   .botons {
     display: flex;
-    gap: 1rem;
+    gap: var(--sp-3);
     flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: var(--sp-7);
   }
 
   .boto {
-    padding: 1rem 2rem;
+    padding: 0.75rem 1.75rem;
     border-radius: var(--radius-sm);
-    font-weight: 600;
-    font-size: 1.1rem;
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    font-weight: 500;
     text-decoration: none;
+    display: inline-block;
   }
 
   .boto-primari {
     background: var(--accent-green);
     color: var(--bg-primary);
-    box-shadow: 0 4px 14px var(--accent-green-soft);
+    border: 1px solid transparent;
   }
 
   .boto-secundari {
     background: transparent;
     color: var(--accent-green);
-    border: 2px solid var(--accent-green);
+    border: 1px solid var(--accent-green);
   }
 
-  .hero-imatge {
-    flex: 1;
-    position: relative;
+  @media (prefers-reduced-motion: no-preference) {
+    .boto {
+      transition: background 150ms ease-out, color 150ms ease-out, transform 150ms ease-out;
+    }
+    .boto-primari:hover {
+      background: var(--accent-green-hover);
+      transform: translateY(-1px);
+    }
+    .boto-secundari:hover {
+      background: var(--accent-green-soft);
+      transform: translateY(-1px);
+    }
+    .boto:active {
+      transform: scale(0.98);
+    }
   }
 
-  .hero-imatge img {
-    width: 100%;
-    height: 600px;
-    object-fit: cover;
-    border-radius: 24px;
-    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.15);
+  /* ─── IL·LUSTRACIONS BOTÀNIQUES ─────────────────── */
+  .plantes-botaniques {
+    display: flex;
+    gap: 40px;
+    align-items: flex-end;
+    justify-content: center;
   }
 
-  /* --- VALORS (FUNDACIÓ) --- */
+  .planta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .planta-imatge-wrap {
+    /* El clip-path s'aplica aquí, no al img, per no afectar el nom */
+    display: flex;
+    align-items: flex-end;
+    height: 110px;
+  }
+
+  .planta-img {
+    height: 110px;
+    width: auto;
+    display: block;
+    object-fit: contain;
+  }
+
+  /* Mode clar: les imatges (fill:#261414) es veuen bé tal qual */
+  /* Mode fosc: invertim per veure-les sobre fons fosc */
+  :global([data-theme="dark"]) .planta-img {
+    filter: brightness(0) invert(1) opacity(0.65);
+  }
+
+  .planta-nom {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-secondary);
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+  }
+
+  /* ─── SECCIÓ VALORS ─────────────────────────────── */
   .valors-container {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 3rem;
-    margin-top: 5rem;
-    margin-bottom: 5rem;
-    padding-top: 5rem;
-    border-top: 1px solid var(--border-default);
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--sp-5);
+    margin-top: var(--sp-8);
+    margin-bottom: var(--sp-8);
+    padding-top: var(--sp-7);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .valor {
     background: var(--bg-secondary);
-    padding: 2.5rem;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-subtle);
-    box-shadow: 0 10px 30px -5px rgba(0,0,0,0.05);
+    padding: var(--sp-6);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-subtle);
   }
 
-  .icona {
-    font-size: 3rem;
-    margin-bottom: 1rem;
+  @media (prefers-reduced-motion: no-preference) {
+    .valor {
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
+    }
+    .valor:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-green);
+    }
+  }
+
+  .valor-icona {
+    color: var(--accent-green);
+    margin-bottom: var(--sp-4);
   }
 
   .valor h2 {
-    color: var(--accent-green);
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--text-primary);
     margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
+    margin-bottom: var(--sp-3);
   }
 
   .valor p {
     color: var(--text-secondary);
     margin: 0;
+    line-height: 1.7;
+    font-size: 0.95rem;
   }
 
-  /* --- ANIMACIONS --- */
+  /* ─── ANIMACIONS ────────────────────────────────── */
   @media (prefers-reduced-motion: no-preference) {
+
+    /* Entrada del contingut del hero */
+    .hero-contingut > .etiqueta-region,
+    .hero-contingut > h1,
+    .hero-contingut > .subtitol,
+    .hero-contingut > .botons {
+      animation: fadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    }
+    .hero-contingut > .etiqueta-region { animation-delay: 0ms; }
+    .hero-contingut > h1              { animation-delay: 60ms; }
+    .hero-contingut > .subtitol       { animation-delay: 120ms; }
+    .hero-contingut > .botons         { animation-delay: 180ms; }
+
+    /* Animació de creixement per a les imatges de plantes */
+    /* El clip-path anima de baix a dalt, com si creixessin */
+    @keyframes creixement {
+      from {
+        clip-path: inset(100% 0 0 0);
+        transform: scale(0.95);
+      }
+      to {
+        clip-path: inset(0% 0 0 0);
+        transform: scale(1);
+      }
+    }
+
+    /* Noms: apareixen amb fade un cop la planta ha crescut */
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Plantes principals: stagger 150ms */
+    .planta-1 .planta-imatge-wrap { animation: creixement 800ms cubic-bezier(0.22, 1, 0.36, 1) 300ms both; }
+    .planta-2 .planta-imatge-wrap { animation: creixement 800ms cubic-bezier(0.22, 1, 0.36, 1) 450ms both; }
+    .planta-3 .planta-imatge-wrap { animation: creixement 800ms cubic-bezier(0.22, 1, 0.36, 1) 600ms both; }
+    .planta-4 .planta-imatge-wrap { animation: creixement 800ms cubic-bezier(0.22, 1, 0.36, 1) 750ms both; }
+    .planta-5 .planta-imatge-wrap { animation: creixement 800ms cubic-bezier(0.22, 1, 0.36, 1) 900ms both; }
+
+    /* Noms: delay = delay_planta + 700ms (quan la planta ja ha crescut del tot) */
+    .planta-1 .planta-nom { animation: fadeIn 300ms ease-out 1000ms both; }
+    .planta-2 .planta-nom { animation: fadeIn 300ms ease-out 1150ms both; }
+    .planta-3 .planta-nom { animation: fadeIn 300ms ease-out 1300ms both; }
+    .planta-4 .planta-nom { animation: fadeIn 300ms ease-out 1450ms both; }
+    .planta-5 .planta-nom { animation: fadeIn 300ms ease-out 1600ms both; }
+
+    /* Plantes dels marges: més lentes i amb més delay */
+    .planta-marge-esquerra { animation: creixement 1200ms cubic-bezier(0.22, 1, 0.36, 1) 1000ms both; }
+    .planta-marge-dreta    { animation: creixement 1200ms cubic-bezier(0.22, 1, 0.36, 1) 1200ms both; }
+
+    /* Stagger per les cards de valors */
+    .valors-container .valor:nth-child(1) { animation: fadeUp 200ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both; }
+    .valors-container .valor:nth-child(2) { animation: fadeUp 200ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both; }
+    .valors-container .valor:nth-child(3) { animation: fadeUp 200ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
+  }
+
+  /* Sense animació: tot visible directament */
+  @media (prefers-reduced-motion: reduce) {
+    .planta-imatge-wrap,
+    .planta-nom,
+    .planta-marge-esquerra,
+    .planta-marge-dreta {
+      clip-path: none;
+      opacity: 1;
+    }
+  }
+
+  /* ─── RESPONSIVE ────────────────────────────────── */
+  @media (max-width: 768px) {
+    /* Amaguem les plantes dels marges */
+    .planta-marge { display: none; }
+
+    /* 4 plantes: s'amaga la pimpinella (planta-4) */
+    .planta-4 { display: none; }
+
+    .planta-img {
+      height: 90px;
+    }
+    .planta-imatge-wrap {
+      height: 90px;
+    }
+    .plantes-botaniques {
+      gap: var(--sp-5);
+    }
+    .planta-nom {
+      font-size: 13px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    /* 3 plantes: s'amaga també plantatge (planta-5) */
+    .planta-5 { display: none; }
+
+    .planta-img {
+      height: 80px;
+    }
+    .planta-imatge-wrap {
+      height: 80px;
+    }
+    .plantes-botaniques {
+      gap: var(--sp-4);
+    }
+    .botons {
+      flex-direction: column;
+      width: 100%;
+      max-width: 280px;
+    }
     .boto {
-      transition: background 150ms ease-out, color 150ms ease-out, transform 150ms ease-out;
+      width: 100%;
+      text-align: center;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════
+     SECCIONS NOVES — base compartida
+  ══════════════════════════════════════════════════ */
+
+  .seccio-destacades,
+  .seccio-afeccions,
+  .seccio-projecte {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .seccio-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--sp-8) var(--sp-6);
+  }
+
+  .seccio-cap {
+    text-align: center;
+    margin-bottom: var(--sp-7);
+  }
+
+  .seccio-cap h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-2) 0;
+  }
+
+  .seccio-subtitol {
+    font-family: var(--font-body);
+    font-size: 15px;
+    color: var(--text-tertiary);
+    margin: 0;
+  }
+
+  /* ── SECCIÓ 1: PLANTES DESTACADES ─────────────── */
+
+  .grid-plantes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: var(--sp-5);
+  }
+
+  .card-planta {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    /* Estat inicial per a l'animació */
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .card-img-wrap {
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+  }
+
+  .card-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .card-cos {
+    padding: var(--sp-5);
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+
+  .card-familia {
+    font-family: var(--font-body);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    margin: 0 0 var(--sp-2) 0;
+  }
+
+  .card-cos h3 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-1) 0;
+    line-height: 1.2;
+  }
+
+  .card-cos .scientific-name {
+    font-size: 0.9rem;
+    margin: 0 0 var(--sp-3) 0;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-1);
+    margin-bottom: var(--sp-4);
+  }
+
+  .card-link {
+    margin-top: auto;
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--accent-green);
+    text-decoration: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card-link {
+      transition: color 150ms ease-out;
+    }
+    .card-link:hover {
+      color: var(--accent-green-hover);
     }
 
-    .boto-primari:hover {
-      background: var(--accent-green-hover);
+    .card-planta {
+      transition: transform 200ms ease-out, border-color 200ms ease-out, opacity 200ms ease-out;
+    }
+
+    /* Animació stagger quan la secció és visible */
+    .seccio-destacades.visible .card-planta:nth-child(1) {
+      animation: fadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
+    }
+    .seccio-destacades.visible .card-planta:nth-child(2) {
+      animation: fadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) 60ms both;
+    }
+    .seccio-destacades.visible .card-planta:nth-child(3) {
+      animation: fadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both;
+    }
+    .seccio-destacades.visible .card-planta:nth-child(4) {
+      animation: fadeUp 300ms cubic-bezier(0.22, 1, 0.36, 1) 180ms both;
+    }
+
+    .card-planta:hover {
       transform: translateY(-2px);
+      border-color: var(--accent-green);
+    }
+  }
+
+  /* ── SECCIÓ 2: AFECCIONS ───────────────────────── */
+
+  .grid-afeccions {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--sp-4);
+  }
+
+  .card-afeccio {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--sp-5);
+    text-align: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-3);
+    color: var(--text-primary);
+    /* Estat inicial per a l'animació */
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .card-afeccio svg {
+    color: var(--accent-green);
+    flex-shrink: 0;
+  }
+
+  .afeccio-nom {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .card-afeccio {
+      transition: transform 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out, opacity 200ms ease-out;
     }
 
-    .boto-primari:active {
-      transform: scale(0.98);
-    }
-
-    .boto-secundari:hover {
-      background: var(--tag-bg);
-    }
-
-    .hero-imatge img {
-      animation: flotar 6s ease-in-out infinite alternate;
-    }
-
-    .valor {
-      transition: transform 200ms ease-out, border-color 200ms ease-out;
-    }
-
-    .valor:hover {
-      transform: translateY(-6px);
+    .card-afeccio:hover {
+      transform: translateY(-2px);
       border-color: var(--accent-green);
     }
 
-    @keyframes flotar {
-      0% { transform: translateY(0px); }
-      100% { transform: translateY(-15px); }
+    .card-afeccio:hover .afeccio-nom {
+      color: var(--accent-green);
+    }
+
+    /* Stagger quan la secció és visible */
+    .seccio-afeccions.visible .card-afeccio:nth-child(1) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(2) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 40ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(3) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 80ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(4) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 120ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(5) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(6) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 200ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(7) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both; }
+    .seccio-afeccions.visible .card-afeccio:nth-child(8) { animation: fadeUp 250ms cubic-bezier(0.22, 1, 0.36, 1) 280ms both; }
+  }
+
+  /* ── SECCIÓ 3: SOBRE EL PROJECTE ──────────────── */
+
+  .seccio-projecte-inner {
+    max-width: 650px;
+    margin: 0 auto;
+    padding: var(--sp-9) var(--sp-6);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-5);
+    /* Estat inicial per a l'animació */
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .etiqueta-seccio {
+    font-family: var(--font-body);
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin: 0;
+  }
+
+  .seccio-projecte-inner h2 {
+    font-family: var(--font-display);
+    font-size: clamp(1.75rem, 3vw, 2.25rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.15;
+  }
+
+  .projecte-text {
+    font-family: var(--font-body);
+    font-size: 16px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .seccio-projecte.visible .seccio-projecte-inner {
+      animation: fadeUp 350ms cubic-bezier(0.22, 1, 0.36, 1) 0ms both;
     }
   }
 
-  /* --- RESPONSIVE PER MÒBILS --- */
-  @media (max-width: 992px) {
-    .hero {
-      flex-direction: column;
-      text-align: center;
-      padding-top: 0;
+  /* ── REDUCED MOTION: tot visible directament ─── */
+  @media (prefers-reduced-motion: reduce) {
+    .card-planta,
+    .card-afeccio,
+    .seccio-projecte-inner {
+      opacity: 1;
+      transform: none;
     }
-    .hero-contingut {
-      max-width: 100%;
+  }
+
+  /* ── RESPONSIVE ────────────────────────────────── */
+  @media (max-width: 768px) {
+    .seccio-inner {
+      padding: var(--sp-7) var(--sp-5);
     }
-    .hero h1 {
-      font-size: 2.8rem;
+    .grid-plantes {
+      grid-template-columns: repeat(2, 1fr);
     }
-    .botons {
-      justify-content: center;
+    .grid-afeccions {
+      grid-template-columns: repeat(2, 1fr);
     }
-    .hero-imatge img {
-      height: 400px;
+    .seccio-projecte-inner {
+      padding: var(--sp-8) var(--sp-5);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .grid-plantes {
+      grid-template-columns: 1fr;
+    }
+    .seccio-inner {
+      padding: var(--sp-6) var(--sp-4);
+    }
+    .seccio-projecte-inner {
+      padding: var(--sp-7) var(--sp-4);
     }
   }
 </style>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const observables = document.querySelectorAll('.observable');
+    if (!observables.length) return;
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1 });
+
+    observables.forEach(el => observer.observe(el));
+  });
+</script>
