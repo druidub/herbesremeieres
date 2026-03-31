@@ -3,11 +3,12 @@ import Layout from '../layouts/Layout.astro';
 import axios from 'axios';
 
 let plantesDestacades = [];
+let afeccionsReals = [];
 try {
   const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
     query: `
       query ObtenirPlantes {
-        plantes(first: 8) {
+        plantes(first: 100) {
           nodes {
             slug
             title
@@ -27,16 +28,30 @@ try {
               nomCientific
               usosMedicinals
             }
+            afeccions {
+              nodes { name slug }
+            }
           }
         }
       }
     `
   });
-  // Obtenim totes les plantes (first: 8); el shuffle es fa al CLIENT
-  // per garantir aleatoreïtat real a cada visita (SSG no pot fer-ho)
+  // El shuffle es fa al CLIENT per garantir aleatoreïtat real a cada visita
   plantesDestacades = resposta.data?.data?.plantes?.nodes || [];
+
+  // Extreure afeccions úniques de totes les plantes (mateix patró que cataleg.astro)
+  const totesAfeccions: { name: string; slug: string }[] = [];
+  plantesDestacades.forEach((planta: any) => {
+    planta.afeccions?.nodes?.forEach((afeccio: any) => {
+      if (!totesAfeccions.some(a => a.slug === afeccio.slug)) {
+        totesAfeccions.push(afeccio);
+      }
+    });
+  });
+  afeccionsReals = totesAfeccions.sort((a, b) => a.name.localeCompare(b.name));
+  console.log('[index] Slugs afeccions:', afeccionsReals.map((a: any) => a.slug));
 } catch (e) {
-  // silenci: si falla, la secció no es mostra
+  // silenci: si falla, les seccions no es mostren
 }
 ---
 
@@ -236,45 +251,21 @@ try {
 
       <div class="grid-afeccions">
 
-        <a href="/cataleg?afeccio=sistema-digestiu-i-fetge" class="card-afeccio">
-          <img src="/il·lustracions/sistema-digestiu-fetge.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Sistema digestiu i fetge</span>
-        </a>
-
-        <a href="/cataleg?afeccio=sistema-respiratori" class="card-afeccio">
-          <img src="/il·lustracions/sistema-respiratori.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Sistema respiratori</span>
-        </a>
-
-        <a href="/cataleg?afeccio=sistema-nervios-i-son" class="card-afeccio">
-          <img src="/il·lustracions/sistema-nervios-son.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Sistema nerviós i son</span>
-        </a>
-
-        <a href="/cataleg?afeccio=pell-i-cicatritzacio" class="card-afeccio">
-          <img src="/il·lustracions/pell-cicatritzacio.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Pell i cicatrització</span>
-        </a>
-
-        <a href="/cataleg?afeccio=ossos-musculs-i-articulacions" class="card-afeccio">
-          <img src="/il·lustracions/ossos-musculs-articulacions.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Ossos, músculs i articulacions</span>
-        </a>
-
-        <a href="/cataleg?afeccio=salut-femenina" class="card-afeccio">
-          <img src="/il·lustracions/salut-femenina.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Salut femenina</span>
-        </a>
-
-        <a href="/cataleg?afeccio=vitalitat-i-nutricio" class="card-afeccio">
-          <img src="/il·lustracions/vitalitat-nutricio.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Vitalitat i nutrició</span>
-        </a>
-
-        <a href="/cataleg?afeccio=depuracio-i-sistema-urinari" class="card-afeccio">
-          <img src="/il·lustracions/depuracio-sistema-urinari.svg" class="afeccio-icona" width="48" height="48" alt="" aria-hidden="true" loading="lazy">
-          <span class="afeccio-nom">Depuració i sistema urinari</span>
-        </a>
+        {afeccionsReals.map((afeccio: any) => (
+            <a href={`/cataleg?afeccio=${afeccio.slug}`} class="card-afeccio">
+              <img
+                src={`/il·lustracions/${afeccio.slug}.svg`}
+                class="afeccio-icona"
+                width="48"
+                height="48"
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                onerror="this.style.display='none'"
+              />
+              <span class="afeccio-nom">{afeccio.name}</span>
+            </a>
+        ))}
 
       </div>
     </div>
@@ -970,8 +961,12 @@ try {
       }
       const grid = document.querySelector('.grid-plantes');
       if (grid) {
-        // Reordenar les 4 seleccionades al DOM i amagar la resta
-        cards.slice(0, 4).forEach(c => grid.appendChild(c));
+        // Moure les 4 seleccionades al PRINCIPI del grid (nth-child 1-4)
+        // perquè els selectors CSS d'animació funcionin correctament
+        const frag = document.createDocumentFragment();
+        cards.slice(0, 4).forEach(c => frag.appendChild(c));
+        grid.insertBefore(frag, grid.firstChild);
+        // Amagar la resta
         cards.slice(4).forEach(c => { c.style.display = 'none'; });
       }
     }
