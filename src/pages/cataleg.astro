@@ -179,7 +179,7 @@ try {
             <p><strong>Nom científic:</strong><em> {planta.dadesBotaniques?.nomCientific || 'Sense classificar'}</em></p>
             <p><strong>Usos:</strong> <span set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} /></p>
 
-            <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més &rarr;</a>
+            <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més <span class="fletxa">→</span></a>
           </article>
         )
       })}
@@ -375,6 +375,15 @@ try {
     .boto-mes:active {
       transform: scale(0.98);
     }
+
+    .boto-mes .fletxa {
+      display: inline-block;
+      transition: transform 200ms ease-out;
+    }
+
+    .boto-mes:hover .fletxa {
+      transform: translateX(4px);
+    }
   }
 
   .error-box {
@@ -402,9 +411,23 @@ try {
     const plantes = Array.from(document.querySelectorAll('.planta-card'));
     autoAnimate(graella);
 
-    let afeccioActiva = 'totes'; // NOU: Guardem quina afecció està clicada
+    let afeccioActiva = 'totes';
 
-    // NOU: Clicks als botons d'afeccions
+    // Llegir filtre d'afecció des de la URL (?afeccio=xxx)
+    const params = new URLSearchParams(window.location.search);
+    const afeccioParam = params.get('afeccio');
+    if (afeccioParam) {
+      const botoUrl = Array.from(botonsAfeccio).find(
+        b => b.getAttribute('data-filtre') === afeccioParam
+      );
+      if (botoUrl) {
+        botonsAfeccio.forEach(b => b.classList.remove('actiu'));
+        botoUrl.classList.add('actiu');
+        afeccioActiva = afeccioParam;
+      }
+    }
+
+    // Clicks als botons d'afeccions
     botonsAfeccio.forEach(boto => {
       boto.addEventListener('click', (e) => {
         // Traiem la classe 'actiu' a tots i la posem al que hem clicat
@@ -467,5 +490,10 @@ try {
     selectOrdre.addEventListener('change', actualitzarGraella);
 
     actualitzarGraella();
+
+    // Scroll suau a la graella si venem d'un link d'afecció
+    if (afeccioParam) {
+      document.getElementById('graella-plantes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   });
 </script>

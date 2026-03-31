@@ -89,6 +89,25 @@
   // per sessió, independentment de quantes vegades es navegui.
   // Usar astro:page-load aquí causaria listeners duplicats en cada navegació.
 
+  function updateThemeAssets(theme: string) {
+    // Favicon: forçar el link actiu independentment de prefers-color-scheme
+    const favLight = document.getElementById('fav-light') as HTMLLinkElement | null;
+    const favDark  = document.getElementById('fav-dark')  as HTMLLinkElement | null;
+    if (favLight && favDark) {
+      if (theme === 'dark') {
+        favLight.media = 'not all';
+        favDark.media  = 'all';
+      } else {
+        favLight.media = 'all';
+        favDark.media  = 'not all';
+      }
+    }
+    // Logo icons al header i footer
+    document.querySelectorAll<HTMLImageElement>('.logo-icon').forEach(img => {
+      img.src = theme === 'dark' ? '/favicon-dark.svg' : '/favicon-light.svg';
+    });
+  }
+
   // Re-aplica el tema després de cada swap de ClientRouter
   // (el data-theme persisteix a <html>, però el re-apliquem per seguretat)
   function applyTheme() {
@@ -96,6 +115,7 @@
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     const theme = (saved === 'dark' || (!saved && prefersDark)) ? 'dark' : 'light';
     document.documentElement.setAttribute('data-theme', theme);
+    updateThemeAssets(theme);
   }
 
   document.addEventListener('astro:after-swap', applyTheme);
@@ -108,5 +128,10 @@
     const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     html.setAttribute('data-theme', next);
     localStorage.setItem('theme', next);
+    updateThemeAssets(next);
   });
+
+  // Sincronitzar favicon i logos en la càrrega inicial
+  const initialTheme = document.documentElement.getAttribute('data-theme') || 'light';
+  updateThemeAssets(initialTheme);
 </script>
