@@ -394,7 +394,7 @@ try {
   }
 
   /* Mode fosc: invertir les il·lustracions dels marges */
-  :global([data-theme="dark"]) .planta-marge img {
+  :global([data-theme="dark"] .planta-marge img) {
     filter: brightness(0) invert(1) opacity(0.55);
   }
 
@@ -518,7 +518,7 @@ try {
 
   /* Mode clar: les imatges (fill:#261414) es veuen bé tal qual */
   /* Mode fosc: invertim per veure-les sobre fons fosc */
-  :global([data-theme="dark"]) .planta-img {
+  :global([data-theme="dark"] .planta-img) {
     filter: brightness(0) invert(1) opacity(0.65);
   }
 
