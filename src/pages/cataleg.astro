@@ -7,7 +7,7 @@ let llistaPlantes = [];
 let missatgeError = null;
 let propietatsUniques = [];
 let familiesUniques = [];
-let afeccionsUniques = []; // NOU: Declarem la variable aquí dalt
+let afeccionsUniques = [];
 
 try {
   const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
@@ -52,19 +52,16 @@ try {
 
   llistaPlantes = resposta.data?.data?.plantes?.nodes || [];
 
-  // Extraiem Propietats úniques
   const totesLesPropietats = llistaPlantes.flatMap(planta =>
     planta.propietats?.nodes?.map(prop => prop.name) || []
   );
   propietatsUniques = [...new Set(totesLesPropietats)].sort();
 
-  // Extraiem Famílies úniques
   const totesLesFamilies = llistaPlantes.flatMap(planta =>
     planta.familiesBotaniques?.nodes?.map(fam => fam.name) || []
   );
   familiesUniques = [...new Set(totesLesFamilies)].sort();
 
-  // NOU: Extraiem Afeccions úniques (Corregit llistaPlantes)
   llistaPlantes.forEach((planta) => {
     if (planta.afeccions && planta.afeccions.nodes) {
       planta.afeccions.nodes.forEach((afeccio) => {
@@ -83,221 +80,651 @@ try {
 
 <Layout title="Herbari - Herbolari Arrel Digital">
 
-  <div class="capcalera-cataleg">
-    <h1>Herbari</h1>
+  <div class="cataleg-page">
+    <div class="cataleg-inner">
 
-    {!missatgeError && (
-      <div class="panell-filtres">
-
-        <div class="grup-filtre" style="flex-grow: 2;">
-          <label for="cercador-text">Buscar planta:</label>
-          <input
-            type="text"
-            id="cercador-text"
-            class="desplegable input-cerca"
-            placeholder="Escriu un nom o nom científic..."
-          />
+      {/* ── HEADER DEL CATÀLEG (full-width dins 1440px) ── */}
+      <div class="cataleg-header">
+        <div class="cataleg-titol">
+          <h1>Herbari</h1>
+          <span class="comptador-resultats" id="comptador-resultats">
+            {llistaPlantes.length} plantes trobades
+          </span>
         </div>
 
-        <div class="grup-filtre">
-          <label for="filtre-propietat">Propietat:</label>
-          <select id="filtre-propietat" class="desplegable">
-            <option value="totes">Totes</option>
-            {propietatsUniques.map((prop) => <option value={prop}>{prop}</option>)}
-          </select>
-        </div>
-
-        <div class="grup-filtre">
-          <label for="filtre-familia">Família Botànica:</label>
-          <select id="filtre-familia" class="desplegable">
-            <option value="totes">Totes</option>
-            {familiesUniques.map((fam) => <option value={fam}>{fam}</option>)}
-          </select>
-        </div>
-
-        <div class="grup-filtre">
-          <label for="ordre-alfabetic">Ordenar per:</label>
-          <select id="ordre-alfabetic" class="desplegable">
-            <option value="comu-az">Nom Comú (A - Z)</option>
-            <option value="comu-za">Nom Comú (Z - A)</option>
-            <option value="cientific-az">Nom Científic (A - Z)</option>
-            <option value="cientific-za">Nom Científic (Z - A)</option>
-          </select>
-        </div>
-
+        <div class="filtres-actius" id="filtres-actius"></div>
       </div>
-    )}
 
-    {!missatgeError && (
-      <div class="filtres-afeccions">
-        <button class="btn-filtre actiu" data-filtre="totes">Totes les afeccions</button>
-        {afeccionsUniques.map((afeccio) => (
-          <button class="btn-filtre" data-filtre={afeccio.slug}>
-            {afeccio.name}
+      {/* ── SIDEBAR ESQUERRA ── */}
+      {!missatgeError && (
+        <aside class="sidebar" id="sidebar">
+          <div class="sidebar-cap">
+            <span class="sidebar-titol-principal">Filtres</span>
+            <button class="sidebar-tancar" id="sidebar-tancar" aria-label="Tancar filtres">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+
+          {/* Cerca */}
+          <div class="sidebar-seccio">
+            <div class="cerca-wrapper">
+              <svg class="cerca-icona" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input
+                type="text"
+                id="cercador-text"
+                class="cerca-input"
+                placeholder="Cercar planta..."
+              />
+            </div>
+          </div>
+
+          {/* Afeccions — obert per defecte */}
+          <div class="sidebar-seccio">
+            <button class="sidebar-toggle" aria-expanded="true">
+              <h3>Afeccions</h3>
+              <svg class="sidebar-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <div class="sidebar-contingut">
+              <div class="checkbox-llista" id="llista-afeccions">
+                {afeccionsUniques.map((afeccio) => (
+                  <label class="checkbox-item">
+                    <input type="checkbox" class="filtre-afeccio custom-checkbox" value={afeccio.slug} data-nom={afeccio.name} />
+                    <span class="checkbox-visual"></span>
+                    <span class="checkbox-label">{afeccio.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Propietats — tancat per defecte */}
+          <div class="sidebar-seccio tancat">
+            <button class="sidebar-toggle" aria-expanded="false">
+              <h3>Propietats</h3>
+              <svg class="sidebar-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <div class="sidebar-contingut">
+              <div class="checkbox-llista" id="llista-propietats">
+                {propietatsUniques.map((prop) => (
+                  <label class="checkbox-item">
+                    <input type="checkbox" class="filtre-propietat custom-checkbox" value={prop} />
+                    <span class="checkbox-visual"></span>
+                    <span class="checkbox-label">{prop}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Famílies — tancat per defecte */}
+          <div class="sidebar-seccio tancat">
+            <button class="sidebar-toggle" aria-expanded="false">
+              <h3>Famílies</h3>
+              <svg class="sidebar-chevron" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6l4 4 4-4"/></svg>
+            </button>
+            <div class="sidebar-contingut">
+              <div class="checkbox-llista" id="llista-families">
+                {familiesUniques.map((fam) => (
+                  <label class="checkbox-item">
+                    <input type="checkbox" class="filtre-familia custom-checkbox" value={fam} />
+                    <span class="checkbox-visual"></span>
+                    <span class="checkbox-label">{fam}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Ordenar — sempre visible */}
+          <div class="sidebar-seccio">
+            <h3 class="sidebar-titol-fix">Ordenar</h3>
+            <select id="ordre-alfabetic" class="select-ordre">
+              <option value="comu-az">Nom Comú (A - Z)</option>
+              <option value="comu-za">Nom Comú (Z - A)</option>
+              <option value="cientific-az">Nom Científic (A - Z)</option>
+              <option value="cientific-za">Nom Científic (Z - A)</option>
+            </select>
+          </div>
+
+          {/* Esborra filtres */}
+          <button class="esborra-filtres" id="esborra-filtres">
+            Esborra tots els filtres
           </button>
-        ))}
-      </div>
-    )}
+        </aside>
+      )}
+
+      {/* ── BACKDROP MÒBIL ── */}
+      <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+      {/* ── GRAELLA DE PLANTES ── */}
+      {missatgeError && (
+        <div class="error-box">
+          <h3>Vaja! No hem pogut connectar amb WordPress:</h3>
+          <p>{missatgeError}</p>
+        </div>
+      )}
+
+      {!missatgeError && (
+        <div class="graella" id="graella-plantes">
+          {llistaPlantes.map((planta) => {
+            const llistaProps = planta.propietats?.nodes?.map(p => p.name).join(',') || '';
+            const llistaFams = planta.familiesBotaniques?.nodes?.map(f => f.name).join(',') || '';
+            const llistaAfeccions = planta.afeccions?.nodes?.map(a => a.slug).join(' ') || '';
+
+            return (
+              <article
+                class="planta-card"
+                data-titol={planta.title}
+                data-cientific={planta.dadesBotaniques?.nomCientific || ''}
+                data-alternatius={planta.dadesBotaniques?.altresNomsComuns || ''}
+                data-propietats={llistaProps}
+                data-families={llistaFams}
+                data-afeccions={llistaAfeccions}
+              >
+                {planta.featuredImage?.node && (
+                  <div class="card-img-wrap">
+                    <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText || planta.title} width={1024} height={768} />
+                  </div>
+                )}
+
+                <div class="etiquetes-container">
+                  {planta.familiesBotaniques?.nodes?.map((fam) => <span class="etiqueta familia">{fam.name}</span>)}
+                  {planta.propietats?.nodes?.map((prop) => <span class="etiqueta propietat">{prop.name}</span>)}
+                </div>
+
+                <h2>{planta.title}</h2>
+                <em class="nom-cientific-card">{planta.dadesBotaniques?.nomCientific || 'Sense classificar'}</em>
+
+                <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més <span class="fletxa">→</span></a>
+              </article>
+            )
+          })}
+        </div>
+      )}
+
+    </div>
   </div>
 
-  {missatgeError && (
-    <div class="error-box">
-      <h3>Vaja! No hem pogut connectar amb WordPress:</h3>
-      <p>{missatgeError}</p>
-    </div>
-  )}
+  {/* ── BOTÓ FLOTANT MÒBIL ── */}
+  <button class="boto-flotant" id="boto-flotant" aria-label="Obrir filtres">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+    </svg>
+    Filtres
+    <span class="boto-flotant-badge" id="boto-flotant-badge"></span>
+  </button>
 
-  {!missatgeError && (
-    <div class="graella" id="graella-plantes">
-      {llistaPlantes.map((planta) => {
-        const llistaProps = planta.propietats?.nodes?.map(p => p.name).join(',') || '';
-        const llistaFams = planta.familiesBotaniques?.nodes?.map(f => f.name).join(',') || '';
-        // NOU: Llistem les afeccions per al data-attribute
-        const llistaAfeccions = planta.afeccions?.nodes?.map(a => a.slug).join(' ') || '';
-
-        return (
-          <article
-            class="planta-card"
-            data-titol={planta.title}
-            data-cientific={planta.dadesBotaniques?.nomCientific || ''}
-            data-alternatius={planta.dadesBotaniques?.altresNomsComuns || ''}
-            data-propietats={llistaProps}
-            data-families={llistaFams}
-            data-afeccions={llistaAfeccions}
-          >
-            {planta.featuredImage?.node && (
-              <Image src={planta.featuredImage.node.sourceUrl} alt={planta.featuredImage.node.altText} width={1024} height={768} />
-            )}
-
-            <div class="etiquetes-container">
-              {planta.familiesBotaniques?.nodes?.map((fam) => <span class="etiqueta familia">{fam.name}</span>)}
-              {planta.propietats?.nodes?.map((prop) => <span class="etiqueta propietat">{prop.name}</span>)}
-            </div>
-
-            <h2>{planta.title}</h2>
-            <small>També coneguda com: {planta.dadesBotaniques?.altresNomsComuns}</small>
-            <p><strong>Nom científic:</strong><em> {planta.dadesBotaniques?.nomCientific || 'Sense classificar'}</em></p>
-            <p><strong>Usos:</strong> <span set:html={planta.dadesBotaniques?.usosMedicinals || 'Cap ús registrat.'} /></p>
-
-            <a href={`/planta/${planta.slug}`} class="boto-mes">Saber-ne més <span class="fletxa">→</span></a>
-          </article>
-        )
-      })}
-    </div>
-  )}
 </Layout>
 
 <style>
-  .capcalera-cataleg {
-    margin-bottom: 2rem;
-    border-bottom: 1px solid var(--border-default);
-    padding-bottom: 1.5rem;
+  /* ══════════════════════════════════════════════════
+     LAYOUT GENERAL — Breakout del main
+     ══════════════════════════════════════════════════ */
+  .cataleg-page {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0 var(--sp-6);
   }
 
-  .capcalera-cataleg h1 {
+  .cataleg-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: var(--sp-6);
+    align-items: start;
+  }
+
+  /* ══════════════════════════════════════════════════
+     HEADER DEL CATÀLEG
+     ══════════════════════════════════════════════════ */
+  .cataleg-header {
+    grid-column: 1 / -1;
+    margin-bottom: var(--sp-5);
+  }
+
+  .cataleg-titol {
+    display: flex;
+    align-items: baseline;
+    gap: var(--sp-4);
+    margin-bottom: var(--sp-4);
+  }
+
+  .cataleg-titol h1 {
     color: var(--text-primary);
-    margin-top: 0;
-    margin-bottom: 1.5rem;
+    margin: 0;
   }
 
-  .panell-filtres {
-    display: flex;
-    gap: 1.5rem;
+  .comptador-resultats {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-tertiary);
+  }
+
+  /* ══════════════════════════════════════════════════
+     BARRA DE FILTRES ACTIUS (pills eliminables)
+     ══════════════════════════════════════════════════ */
+  .filtres-actius {
+    display: none;
     flex-wrap: wrap;
-    background: var(--bg-secondary);
-    padding: 1rem;
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border-subtle);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    margin-bottom: 1.5rem;
+    gap: var(--sp-2);
   }
 
-  .grup-filtre {
+  .filtres-actius.visible {
     display: flex;
-    flex-direction: column;
-    gap: 0.3rem;
-    flex-grow: 1;
-    min-width: 150px;
   }
 
-  .grup-filtre label {
-    font-size: 0.85rem;
-    font-weight: bold;
+  .pill-filtre {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    border: none;
+    cursor: default;
+  }
+
+  .pill-filtre--propietat {
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  .pill-filtre--familia {
+    background: var(--accent-amber-soft);
+    color: var(--accent-amber);
+  }
+
+  .pill-filtre--afeccio {
+    background: var(--accent-green-soft);
+    color: var(--accent-green);
+  }
+
+  .pill-filtre--cerca {
+    background: var(--bg-tertiary);
     color: var(--text-secondary);
   }
 
-  .desplegable {
-    padding: 0.6rem;
-    border: 1px solid var(--border-default);
-    border-radius: 6px;
-    font-size: 1rem;
-    color: var(--text-primary);
-    background-color: var(--bg-primary);
+  .pill-filtre .pill-x {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
     cursor: pointer;
-    font-family: var(--font-body);
+    color: inherit;
+    font-size: 15px;
+    line-height: 1;
+    opacity: 0.7;
   }
 
-  .desplegable:focus {
+  .pill-filtre .pill-x:hover {
+    opacity: 1;
+    color: var(--color-danger);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pill-filtre {
+      animation: pillIn 150ms ease-out;
+    }
+
+    @keyframes pillIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  }
+
+  /* ══════════════════════════════════════════════════
+     SIDEBAR
+     ══════════════════════════════════════════════════ */
+  .sidebar {
+    position: sticky;
+    top: 80px;
+    max-height: calc(100vh - 100px);
+    overflow-y: auto;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--sp-5);
+  }
+
+  /* Scrollbar estilitzada */
+  .sidebar::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    background: var(--border-default);
+    border-radius: 4px;
+  }
+
+  .sidebar-cap {
+    display: none; /* Només visible en mòbil */
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--sp-4);
+  }
+
+  .sidebar-titol-principal {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .sidebar-tancar {
+    background: none;
+    border: none;
+    padding: var(--sp-1);
+    cursor: pointer;
+    color: var(--text-tertiary);
+    border-radius: var(--radius-sm);
+  }
+
+  .sidebar-tancar:hover {
+    color: var(--text-primary);
+    background: var(--bg-tertiary);
+  }
+
+  .sidebar-seccio {
+    padding-top: var(--sp-4);
+    margin-top: var(--sp-4);
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .sidebar-seccio:first-of-type {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  /* ── Acordió toggle ── */
+  .sidebar-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--sp-3) 0;
+    color: var(--text-tertiary);
+  }
+
+  .sidebar-toggle h3 {
+    font-family: var(--font-body);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    margin: 0;
+    font-weight: 500;
+    line-height: 1;
+  }
+
+  .sidebar-toggle:hover h3 {
+    color: var(--text-secondary);
+  }
+
+  .sidebar-chevron {
+    flex-shrink: 0;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sidebar-chevron {
+      transition: transform 200ms ease-out;
+    }
+  }
+
+  .sidebar-seccio.tancat .sidebar-chevron {
+    transform: rotate(-90deg);
+  }
+
+  .sidebar-contingut {
+    padding-bottom: var(--sp-2);
+  }
+
+  .sidebar-seccio.tancat .sidebar-contingut {
+    display: none;
+  }
+
+  /* ── Cerca ── */
+  .cerca-wrapper {
+    position: relative;
+  }
+
+  .cerca-icona {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  .cerca-input {
+    width: 100%;
+    padding: 8px 10px 8px 34px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+  }
+
+  .cerca-input:focus {
     outline: none;
     border-color: var(--accent-green);
   }
 
-  .input-cerca { cursor: text; }
-
-  .input-cerca::placeholder {
+  .cerca-input::placeholder {
     color: var(--text-tertiary);
   }
 
-  /* Botons d'afeccions */
-  .filtres-afeccions {
+  /* ── Checkboxes ── */
+  .checkbox-llista {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-top: 1rem;
+    flex-direction: column;
+    gap: var(--sp-2);
   }
 
-  .btn-filtre {
-    padding: 0.4rem 1rem;
-    border: 1px solid var(--accent-green);
-    background: transparent;
-    color: var(--accent-green);
-    border-radius: 50px;
-    font-size: 0.9rem;
-    font-family: var(--font-body);
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
     cursor: pointer;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.3;
   }
 
-  .btn-filtre:hover,
-  .btn-filtre.actiu {
+  .checkbox-item:hover {
+    color: var(--text-primary);
+  }
+
+  .custom-checkbox {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .checkbox-visual {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border-default);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .custom-checkbox:checked + .checkbox-visual {
     background: var(--accent-green);
-    color: var(--bg-primary);
+    border-color: var(--accent-green);
+  }
+
+  .custom-checkbox:checked + .checkbox-visual::after {
+    content: '';
+    display: block;
+    width: 10px;
+    height: 10px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+    background-size: contain;
+    background-repeat: no-repeat;
+  }
+
+  .custom-checkbox:focus-visible + .checkbox-visual {
+    outline: 2px solid var(--accent-green);
+    outline-offset: 2px;
   }
 
   @media (prefers-reduced-motion: no-preference) {
-    .btn-filtre {
-      transition: background 150ms ease-out, color 150ms ease-out;
+    .checkbox-visual {
+      transition: background 150ms ease-out, border-color 150ms ease-out, transform 150ms ease-out;
+    }
+
+    .custom-checkbox:checked + .checkbox-visual {
+      animation: checkPop 150ms ease-out;
+    }
+
+    @keyframes checkPop {
+      0% { transform: scale(0.9); }
+      100% { transform: scale(1); }
     }
   }
 
+  .checkbox-label {
+    user-select: none;
+  }
+
+  .sidebar-titol-fix {
+    font-family: var(--font-body);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-tertiary);
+    margin: 0 0 var(--sp-3) 0;
+    font-weight: 500;
+    line-height: 1;
+    padding-top: var(--sp-3);
+  }
+
+  /* ── Select ordenar ── */
+  .select-ordre {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    cursor: pointer;
+  }
+
+  .select-ordre:focus {
+    outline: none;
+    border-color: var(--accent-green);
+  }
+
+  /* ── Esborra filtres ── */
+  .esborra-filtres {
+    display: none;
+    width: 100%;
+    margin-top: var(--sp-4);
+    padding: 10px;
+    background: transparent;
+    border: 1px solid var(--border-default);
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    border-radius: var(--radius-sm);
+    text-align: center;
+  }
+
+  .esborra-filtres.visible {
+    display: block;
+  }
+
+  .esborra-filtres:hover {
+    color: var(--accent-green);
+    border-color: var(--accent-green);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .esborra-filtres {
+      transition: color 150ms ease-out, border-color 150ms ease-out;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════
+     BACKDROP MÒBIL
+     ══════════════════════════════════════════════════ */
+  .sidebar-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .sidebar-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .sidebar-backdrop {
+      transition: opacity 300ms ease-out;
+    }
+  }
+
+  /* ══════════════════════════════════════════════════
+     GRAELLA DE PLANTES
+     ══════════════════════════════════════════════════ */
   .graella {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--sp-5);
+    width: 100%;
   }
 
   .planta-card {
     background: var(--bg-secondary);
-    padding: 1.5rem;
+    padding: var(--sp-5);
     border-radius: var(--radius-md);
-    box-shadow: 0 10px 15px -3px rgba(0,0,0,0.07);
-    border: 1px solid var(--border-subtle);
+    border: 0.5px solid var(--border-subtle);
     display: flex;
     flex-direction: column;
+    width: 100%;
+    min-width: 0;
   }
 
   @media (prefers-reduced-motion: no-preference) {
     .planta-card {
-      transition: transform 200ms ease-out, border-color 200ms ease-out, box-shadow 200ms ease-out;
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
     }
 
     .planta-card:hover {
@@ -310,18 +737,34 @@ try {
     }
   }
 
+  .card-img-wrap {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--sp-3);
+  }
+
   .planta-card img {
     width: 100%;
-    height: 220px;
+    height: 100%;
     object-fit: cover;
-    border-radius: var(--radius-sm);
-    margin-bottom: 1rem;
+    display: block;
   }
 
   .planta-card h2 {
     color: var(--text-primary);
+    font-size: 1.2rem;
     margin-top: 0;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .nom-cientific-card {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    color: var(--accent-green);
+    margin-bottom: var(--sp-3);
   }
 
   .etiquetes-container {
@@ -332,8 +775,8 @@ try {
   }
 
   .etiqueta {
-    padding: 0.2rem 0.6rem;
-    border-radius: 99px;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
     font-size: 0.75rem;
     font-weight: 500;
     font-family: var(--font-body);
@@ -344,10 +787,13 @@ try {
     color: var(--tag-text);
   }
 
-  /* Famílies: accent ambre (neutre, dins del sistema) */
   .etiqueta.familia {
     background: var(--accent-amber-soft);
     color: var(--accent-amber-hover);
+  }
+
+  .etiquetes-container > .etiqueta:nth-child(n+5) {
+    display: none;
   }
 
   .boto-mes {
@@ -387,11 +833,157 @@ try {
   }
 
   .error-box {
+    grid-column: 1 / -1;
     background: var(--accent-amber-soft);
     color: var(--color-danger);
     padding: 1rem;
     border-radius: var(--radius-sm);
     border: 1px solid var(--color-danger);
+  }
+
+  /* ══════════════════════════════════════════════════
+     BOTÓ FLOTANT MÒBIL
+     ══════════════════════════════════════════════════ */
+  .boto-flotant {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 998;
+    align-items: center;
+    gap: var(--sp-2);
+    padding: 12px 20px;
+    background: var(--accent-green);
+    color: var(--bg-primary);
+    border: none;
+    border-radius: 50px;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 500;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .boto-flotant-badge {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--bg-primary);
+    color: var(--accent-green);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .boto-flotant-badge.visible {
+    display: inline-flex;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .boto-flotant {
+      transition: transform 150ms ease-out, box-shadow 150ms ease-out;
+    }
+
+    .boto-flotant:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+    }
+
+    .boto-flotant:active {
+      transform: scale(0.97);
+    }
+
+    .boto-flotant.pulsant {
+      animation: pulsacio 2s ease-in-out infinite;
+    }
+
+    @keyframes pulsacio {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+  }
+
+  /* ══════════════════════════════════════════════════
+     RESPONSIVE
+     ══════════════════════════════════════════════════ */
+
+  /* 768-1023px */
+  @media (max-width: 1023px) {
+    .cataleg-inner {
+      grid-template-columns: 240px 1fr;
+      gap: var(--sp-5);
+    }
+  }
+
+  /* < 768px — sidebar overlay */
+  @media (max-width: 767px) {
+    .cataleg-page {
+      padding: 0 var(--sp-3);
+    }
+
+    .cataleg-inner {
+      grid-template-columns: 1fr;
+      gap: var(--sp-4);
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: min(300px, 85vw);
+      max-height: 100vh;
+      z-index: 1000;
+      border-radius: 0;
+      border: none;
+      background: var(--bg-primary);
+      transform: translateX(-100%);
+      overflow-y: auto;
+      padding: var(--sp-4);
+    }
+
+    .sidebar.oberta {
+      transform: translateX(0);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .sidebar {
+        transition: transform 300ms ease-out;
+      }
+    }
+
+    .sidebar-cap {
+      display: flex;
+    }
+
+    .sidebar-backdrop {
+      display: block;
+    }
+
+    .boto-flotant {
+      display: flex;
+    }
+
+    .graella {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: var(--sp-3);
+    }
+  }
+
+  /* < 480px */
+  @media (max-width: 479px) {
+    .graella {
+      grid-template-columns: 1fr;
+    }
+
+    .cataleg-titol {
+      flex-direction: column;
+      gap: var(--sp-2);
+    }
   }
 </style>
 
@@ -399,11 +991,19 @@ try {
   import autoAnimate from '@formkit/auto-animate';
 
   document.addEventListener('astro:page-load', () => {
-    const inputCerca = document.getElementById('cercador-text');
-    const selectPropietat = document.getElementById('filtre-propietat');
-    const selectFamilia = document.getElementById('filtre-familia');
-    const selectOrdre = document.getElementById('ordre-alfabetic');
-    const botonsAfeccio = document.querySelectorAll('.btn-filtre'); // NOU
+    const inputCerca = document.getElementById('cercador-text') as HTMLInputElement;
+    const selectOrdre = document.getElementById('ordre-alfabetic') as HTMLSelectElement;
+    const checkboxesPropietat = document.querySelectorAll('.filtre-propietat');
+    const checkboxesFamilia = document.querySelectorAll('.filtre-familia');
+    const checkboxesAfeccio = document.querySelectorAll('.filtre-afeccio');
+    const comptadorEl = document.getElementById('comptador-resultats');
+    const filtresActiusEl = document.getElementById('filtres-actius');
+    const esborraFiltresBtn = document.getElementById('esborra-filtres');
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    const botoFlotant = document.getElementById('boto-flotant');
+    const botoTancar = document.getElementById('sidebar-tancar');
+    const badgeFlotant = document.getElementById('boto-flotant-badge');
 
     const graella = document.getElementById('graella-plantes');
     if (!graella) return;
@@ -411,68 +1011,176 @@ try {
     const plantes = Array.from(document.querySelectorAll('.planta-card'));
     autoAnimate(graella);
 
-    let afeccioActiva = 'totes';
-
-    // Llegir filtre d'afecció des de la URL (?afeccio=xxx)
+    // ── Llegir filtre d'afecció des de la URL ──
     const params = new URLSearchParams(window.location.search);
     const afeccioParam = params.get('afeccio');
     if (afeccioParam) {
-      const botoUrl = Array.from(botonsAfeccio).find(
-        b => b.getAttribute('data-filtre') === afeccioParam
-      );
-      if (botoUrl) {
-        botonsAfeccio.forEach(b => b.classList.remove('actiu'));
-        botoUrl.classList.add('actiu');
-        afeccioActiva = afeccioParam;
-      }
+      const cbUrl = Array.from(checkboxesAfeccio).find(
+        cb => (cb as HTMLInputElement).value === afeccioParam
+      ) as HTMLInputElement | undefined;
+      if (cbUrl) cbUrl.checked = true;
     }
 
-    // Clicks als botons d'afeccions
-    botonsAfeccio.forEach(boto => {
-      boto.addEventListener('click', (e) => {
-        // Traiem la classe 'actiu' a tots i la posem al que hem clicat
-        botonsAfeccio.forEach(b => b.classList.remove('actiu'));
-        e.target.classList.add('actiu');
+    // ── Sidebar mòbil ──
+    function obrirSidebar() {
+      sidebar?.classList.add('oberta');
+      backdrop?.classList.add('visible');
+      document.body.style.overflow = 'hidden';
+    }
 
-        // Guardem el filtre actiu i actualitzem la graella
-        afeccioActiva = e.target.getAttribute('data-filtre');
-        actualitzarGraella();
-      });
-    });
+    function tancarSidebar() {
+      sidebar?.classList.remove('oberta');
+      backdrop?.classList.remove('visible');
+      document.body.style.overflow = '';
+    }
 
-    function actualitzarGraella() {
-      const textCercat = inputCerca.value.toLowerCase().trim();
-      const propActiva = selectPropietat.value;
-      const famActiva = selectFamilia.value;
-      const ordreActiu = selectOrdre.value;
+    botoFlotant?.addEventListener('click', obrirSidebar);
+    botoTancar?.addEventListener('click', tancarSidebar);
+    backdrop?.addEventListener('click', tancarSidebar);
 
-      plantes.forEach(planta => {
-        const titol = planta.getAttribute('data-titol').toLowerCase();
-        const cientific = planta.getAttribute('data-cientific').toLowerCase();
-        const alternatius = planta.getAttribute('data-alternatius')?.toLowerCase() || '';
+    // ── Actualitzar pills de filtres actius ──
+    function actualitzarPills() {
+      if (!filtresActiusEl) return;
+      filtresActiusEl.innerHTML = '';
+      let count = 0;
 
-        const dadesProp = planta.getAttribute('data-propietats');
-        const dadesFam = planta.getAttribute('data-families');
-        const dadesAfecc = planta.getAttribute('data-afeccions') || ''; // NOU
+      // Pill de cerca
+      const textCercat = inputCerca?.value.trim() || '';
+      if (textCercat) {
+        count++;
+        filtresActiusEl.appendChild(crearPill(`"${textCercat}"`, 'cerca', () => {
+          if (inputCerca) inputCerca.value = '';
+          actualitzarGraella();
+        }));
+      }
 
-        const compleixText = textCercat === '' || titol.includes(textCercat) || cientific.includes(textCercat) || alternatius.includes(textCercat);
-        const compleixProp = propActiva === 'totes' || dadesProp.includes(propActiva);
-        const compleixFam = famActiva === 'totes' || dadesFam.includes(famActiva);
-        const compleixAfeccio = afeccioActiva === 'totes' || dadesAfecc.includes(afeccioActiva); // NOU
-
-        // NOU: Afegim 'compleixAfeccio' a la condició final
-        if (compleixText && compleixProp && compleixFam && compleixAfeccio) {
-          planta.style.display = 'flex';
-        } else {
-          planta.style.display = 'none';
+      // Pills d'afeccions
+      checkboxesAfeccio.forEach(cb => {
+        const input = cb as HTMLInputElement;
+        if (input.checked) {
+          count++;
+          const nom = input.getAttribute('data-nom') || input.value;
+          filtresActiusEl.appendChild(crearPill(nom, 'afeccio', () => {
+            input.checked = false;
+            actualitzarGraella();
+          }));
         }
       });
 
+      // Pills de propietats
+      checkboxesPropietat.forEach(cb => {
+        const input = cb as HTMLInputElement;
+        if (input.checked) {
+          count++;
+          filtresActiusEl.appendChild(crearPill(input.value, 'propietat', () => {
+            input.checked = false;
+            actualitzarGraella();
+          }));
+        }
+      });
+
+      // Pills de famílies
+      checkboxesFamilia.forEach(cb => {
+        const input = cb as HTMLInputElement;
+        if (input.checked) {
+          count++;
+          filtresActiusEl.appendChild(crearPill(input.value, 'familia', () => {
+            input.checked = false;
+            actualitzarGraella();
+          }));
+        }
+      });
+
+      // Mostrar/amagar barra
+      filtresActiusEl.classList.toggle('visible', count > 0);
+
+      // Mostrar/amagar botó esborra
+      esborraFiltresBtn?.classList.toggle('visible', count > 0);
+
+      // Badge del botó flotant
+      if (badgeFlotant) {
+        if (count > 0) {
+          badgeFlotant.textContent = String(count);
+          badgeFlotant.classList.add('visible');
+          botoFlotant?.classList.add('pulsant');
+        } else {
+          badgeFlotant.classList.remove('visible');
+          botoFlotant?.classList.remove('pulsant');
+        }
+      }
+    }
+
+    function crearPill(text: string, tipus: string, onRemove: () => void): HTMLElement {
+      const pill = document.createElement('span');
+      pill.className = `pill-filtre pill-filtre--${tipus}`;
+      pill.innerHTML = `<span>${text}</span>`;
+      const btnX = document.createElement('button');
+      btnX.className = 'pill-x';
+      btnX.textContent = '×';
+      btnX.setAttribute('aria-label', `Treure filtre: ${text}`);
+      btnX.addEventListener('click', onRemove);
+      pill.appendChild(btnX);
+      return pill;
+    }
+
+    // ── Funció principal de filtratge ──
+    function actualitzarGraella() {
+      const textCercat = (inputCerca?.value || '').toLowerCase().trim();
+      const ordreActiu = selectOrdre?.value || 'comu-az';
+
+      // Múltiples propietats (OR)
+      const propsActives = Array.from(checkboxesPropietat)
+        .filter(cb => (cb as HTMLInputElement).checked)
+        .map(cb => (cb as HTMLInputElement).value);
+
+      // Múltiples famílies (OR)
+      const famsActives = Array.from(checkboxesFamilia)
+        .filter(cb => (cb as HTMLInputElement).checked)
+        .map(cb => (cb as HTMLInputElement).value);
+
+      // Múltiples afeccions (OR)
+      const afeccionsActives = Array.from(checkboxesAfeccio)
+        .filter(cb => (cb as HTMLInputElement).checked)
+        .map(cb => (cb as HTMLInputElement).value);
+
+      let comptador = 0;
+
+      plantes.forEach(planta => {
+        const titol = (planta.getAttribute('data-titol') || '').toLowerCase();
+        const cientific = (planta.getAttribute('data-cientific') || '').toLowerCase();
+        const alternatius = (planta.getAttribute('data-alternatius') || '').toLowerCase();
+        const dadesProp = planta.getAttribute('data-propietats') || '';
+        const dadesFam = planta.getAttribute('data-families') || '';
+        const dadesAfecc = planta.getAttribute('data-afeccions') || '';
+
+        const compleixText = textCercat === '' ||
+          titol.includes(textCercat) ||
+          cientific.includes(textCercat) ||
+          alternatius.includes(textCercat);
+
+        const compleixProp = propsActives.length === 0 ||
+          propsActives.some(prop => dadesProp.includes(prop));
+
+        const compleixFam = famsActives.length === 0 ||
+          famsActives.some(fam => dadesFam.includes(fam));
+
+        const compleixAfeccio = afeccionsActives.length === 0 ||
+          afeccionsActives.some(afecc => dadesAfecc.includes(afecc));
+
+        if (compleixText && compleixProp && compleixFam && compleixAfeccio) {
+          (planta as HTMLElement).style.display = 'flex';
+          comptador++;
+        } else {
+          (planta as HTMLElement).style.display = 'none';
+        }
+      });
+
+      // Ordenar
       plantes.sort((a, b) => {
-        const titolA = a.getAttribute('data-titol').toLowerCase();
-        const titolB = b.getAttribute('data-titol').toLowerCase();
-        const cientificA = a.getAttribute('data-cientific').toLowerCase();
-        const cientificB = b.getAttribute('data-cientific').toLowerCase();
+        const titolA = (a.getAttribute('data-titol') || '').toLowerCase();
+        const titolB = (b.getAttribute('data-titol') || '').toLowerCase();
+        const cientificA = (a.getAttribute('data-cientific') || '').toLowerCase();
+        const cientificB = (b.getAttribute('data-cientific') || '').toLowerCase();
 
         if (ordreActiu === 'comu-az') return titolA.localeCompare(titolB);
         if (ordreActiu === 'comu-za') return titolB.localeCompare(titolA);
@@ -482,16 +1190,53 @@ try {
       });
 
       plantes.forEach(planta => graella.appendChild(planta));
+
+      // Actualitzar comptador
+      if (comptadorEl) {
+        comptadorEl.textContent = `${comptador} plantes trobades`;
+      }
+
+      // Actualitzar pills
+      actualitzarPills();
     }
 
-    inputCerca.addEventListener('input', actualitzarGraella);
-    selectPropietat.addEventListener('change', actualitzarGraella);
-    selectFamilia.addEventListener('change', actualitzarGraella);
-    selectOrdre.addEventListener('change', actualitzarGraella);
+    // ── Esborra tots els filtres ──
+    esborraFiltresBtn?.addEventListener('click', () => {
+      if (inputCerca) inputCerca.value = '';
+      checkboxesPropietat.forEach(cb => (cb as HTMLInputElement).checked = false);
+      checkboxesFamilia.forEach(cb => (cb as HTMLInputElement).checked = false);
+      checkboxesAfeccio.forEach(cb => (cb as HTMLInputElement).checked = false);
+      actualitzarGraella();
+    });
 
+    // ── Event listeners ──
+    inputCerca?.addEventListener('input', actualitzarGraella);
+    selectOrdre?.addEventListener('change', actualitzarGraella);
+    checkboxesPropietat.forEach(cb =>
+      cb.addEventListener('change', actualitzarGraella)
+    );
+    checkboxesFamilia.forEach(cb =>
+      cb.addEventListener('change', actualitzarGraella)
+    );
+    checkboxesAfeccio.forEach(cb =>
+      cb.addEventListener('change', actualitzarGraella)
+    );
+
+    // ── Acordió sidebar ──
+    document.querySelectorAll('.sidebar-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const seccio = btn.parentElement;
+        if (!seccio) return;
+        seccio.classList.toggle('tancat');
+        const expanded = !seccio.classList.contains('tancat');
+        btn.setAttribute('aria-expanded', String(expanded));
+      });
+    });
+
+    // ── Inicialitzar ──
     actualitzarGraella();
 
-    // Scroll suau a la graella si venem d'un link d'afecció
+    // Scroll suau si venem d'un link d'afecció
     if (afeccioParam) {
       document.getElementById('graella-plantes')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
