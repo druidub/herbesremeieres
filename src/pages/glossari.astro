@@ -353,19 +353,30 @@ const lletresAmbContingut = new Set(Object.keys(perLletra));
 
     // ── Lletra activa al scroll ──
     const lletresNav = document.querySelectorAll<HTMLElement>('.nav-lletra:not(.inactiva)');
+    const seccionsOrdenades = document.querySelectorAll<HTMLElement>('.grup-lletra');
+    const visibles = new Set<string>();
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
-          const id = entry.target.id;
-          lletresNav.forEach(l => l.classList.remove('actual'));
-          const lNav = document.querySelector<HTMLElement>(`.nav-lletra[href="#${id}"]`);
-          if (lNav) lNav.classList.add('actual');
+          visibles.add(entry.target.id);
+        } else {
+          visibles.delete(entry.target.id);
         }
       });
+
+      // Escull la secció visible més amunt del DOM
+      for (const seccio of seccionsOrdenades) {
+        if (visibles.has(seccio.id)) {
+          lletresNav.forEach(l => l.classList.remove('actual'));
+          const lNav = document.querySelector<HTMLElement>(`.nav-lletra[href="#${seccio.id}"]`);
+          if (lNav) lNav.classList.add('actual');
+          break;
+        }
+      }
     }, {
-      threshold: 0.3,
-      rootMargin: '-80px 0px -60% 0px'
+      threshold: 0,
+      rootMargin: '-80px 0px -40% 0px'
     });
 
     grups.forEach(s => observer.observe(s));
