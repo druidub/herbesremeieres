@@ -1,11 +1,13 @@
 ---
+import axios from 'axios';
 import Layout from '../layouts/Layout.astro';
 
-// 1. Fem la crida a WordPress per obtenir les propietats
-const response = await fetch(import.meta.env.WP_GRAPHQL_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
+const LLETRES = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+
+let propietats = [];
+
+try {
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
     query: `
       query ObtenirPropietats {
         propietats(first: 100) {
@@ -16,76 +18,252 @@ const response = await fetch(import.meta.env.WP_GRAPHQL_URL, {
           }
         }
       }
-    `,
-  }),
-});
+    `
+  });
 
-const { data } = await response.json();
+  propietats = (resposta.data?.data?.propietats?.nodes || [])
+    .filter(prop => prop.description !== null)
+    .sort((a, b) => a.name.localeCompare(b.name, 'ca'));
+} catch (e) {
+  console.error('Error carregant glossari:', e);
+}
 
-// 2. Filtrem les que no tenen descripció (opcional) i les ordenem alfabèticament
-const propietats = data.propietats.nodes
-  .filter(prop => prop.description !== null) // Així amaguem les que estan buides temporalment
-  .sort((a, b) => a.name.localeCompare(b.name));
+// Agrupar per primera lletra
+const perLletra: Record<string, typeof propietats> = {};
+for (const prop of propietats) {
+  const lletra = prop.name[0].toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (!perLletra[lletra]) perLletra[lletra] = [];
+  perLletra[lletra].push(prop);
+}
+
+const lletresAmbContingut = new Set(Object.keys(perLletra));
 ---
 
-<Layout title="Glossari de Propietats Medicinals | Herbes Remeieres">
-  <main class="glossari-container">
-    <header class="glossari-header">
-      <h1>Glossari de Propietats</h1>
-      <p>Descobreix el significat dels termes botànics i medicinals que fem servir per descriure els beneficis de cada planta.</p>
-    </header>
+<Layout title="Glossari de Propietats Medicinals | Herbolari Arrel">
+  <main class="glossari-page">
+    <div class="glossari-inner">
 
-    <div class="diccionari">
-      {propietats.map((prop) => (
-        <article class="terme" id={prop.slug}>
-          <h2>{prop.name}</h2>
-          <p>{prop.description}</p>
-        </article>
-      ))}
+      <header class="glossari-header">
+        <h1>Glossari de propietats</h1>
+        <p>El significat dels termes botànics i medicinals que fem servir per descriure els beneficis de cada planta.</p>
+      </header>
+
+      <div class="glossari-cerca-wrap">
+        <svg class="cerca-icona" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        <input
+          type="search"
+          class="glossari-cerca"
+          placeholder="Cerca un terme..."
+          aria-label="Cerca al glossari"
+        />
+      </div>
+
+      <div class="glossari-layout">
+
+        <nav class="glossari-nav" aria-label="Navegació per lletra">
+          {LLETRES.map(l => (
+            lletresAmbContingut.has(l)
+              ? <a href={`#lletra-${l}`} class="nav-lletra">{l}</a>
+              : <span class="nav-lletra inactiva">{l}</span>
+          ))}
+        </nav>
+
+        <div class="glossari-contingut">
+          {LLETRES.filter(l => lletresAmbContingut.has(l)).map(l => (
+            <section class="grup-lletra" id={`lletra-${l}`}>
+              <h2 class="lletra-titol">{l}</h2>
+              {perLletra[l].map((prop, i) => (
+                <div class="terme" style={`--i:${i}`} id={prop.slug}>
+                  <h3>{prop.name}</h3>
+                  <p>{prop.description}</p>
+                </div>
+              ))}
+            </section>
+          ))}
+        </div>
+
+      </div>
     </div>
   </main>
 </Layout>
 
 <style>
-  .glossari-container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
+  /* ── Layout full-width ── */
+  .glossari-page {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    padding: 0 var(--sp-6);
   }
 
+  .glossari-inner {
+    max-width: 1000px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
   .glossari-header {
     text-align: center;
-    margin-bottom: 3rem;
+    padding: var(--sp-8) 0 var(--sp-6);
   }
 
   .glossari-header h1 {
-    font-size: 2.5rem;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 400;
     color: var(--text-primary);
-    margin-bottom: 0.5rem;
+    margin: 0 0 var(--sp-3);
   }
 
   .glossari-header p {
     color: var(--text-secondary);
-    font-size: 1.1rem;
-    line-height: 1.6;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    max-width: 520px;
+    margin: 0 auto;
   }
 
-  .diccionari {
+  /* ── Cercador ── */
+  .glossari-cerca-wrap {
+    position: relative;
+    max-width: 400px;
+    margin: 0 auto var(--sp-7);
+  }
+
+  .glossari-cerca {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    border: 1px solid var(--border-default);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    font-size: 15px;
+    appearance: none;
+  }
+
+  .glossari-cerca:focus {
+    outline: none;
+    border-color: var(--accent-green);
+  }
+
+  .glossari-cerca::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+  }
+
+  .cerca-icona {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-tertiary);
+    pointer-events: none;
+  }
+
+  /* ── Layout principal ── */
+  .glossari-layout {
+    display: flex;
+    gap: var(--sp-5);
+    align-items: flex-start;
+    padding-bottom: var(--sp-9);
+  }
+
+  /* ── Nav lletres ── */
+  .glossari-nav {
+    position: sticky;
+    top: 80px;
+    align-self: start;
     display: flex;
     flex-direction: column;
-    gap: 1.5rem;
+    align-items: center;
+    gap: 0;
+    padding: var(--sp-2) 0;
+    width: 36px;
+    flex-shrink: 0;
+  }
+
+  .nav-lletra {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 4px;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .nav-lletra.inactiva {
+    color: var(--text-tertiary);
+    opacity: 0.35;
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .nav-lletra.actual {
+    color: var(--accent-green);
+    background: var(--accent-green-soft);
+    font-weight: 600;
+  }
+
+  /* ── Contingut ── */
+  .glossari-contingut {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── Grups i termes ── */
+  .grup-lletra {
+    margin-bottom: var(--sp-7);
+  }
+
+  .lletra-titol {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 400;
+    color: var(--accent-green);
+    margin: 0 0 var(--sp-4);
+    padding-bottom: var(--sp-2);
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   .terme {
-    background-color: var(--bg-secondary);
-    padding: 1.5rem;
-    border-radius: var(--radius-sm);
-    border-left: 4px solid var(--accent-green);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    background: var(--bg-secondary);
+    padding: var(--sp-5);
+    border-left: 3px solid var(--accent-green);
+    border-radius: 0;
+    margin-bottom: var(--sp-3);
   }
 
+  .terme h3 {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-2);
+  }
+
+  .terme p {
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.7;
+    font-size: 15px;
+  }
+
+  /* ── Animacions ── */
   @media (prefers-reduced-motion: no-preference) {
+    .glossari-header {
+      animation: fadeUp 250ms ease-out both;
+    }
+
     .terme {
+      animation: fadeUp 300ms ease-out both;
+      animation-delay: calc(var(--i, 0) * 40ms);
       transition: transform 200ms ease-out, border-color 200ms ease-out;
     }
 
@@ -93,18 +271,100 @@ const propietats = data.propietats.nodes
       transform: translateX(4px);
       border-color: var(--accent-amber);
     }
+
+    .nav-lletra {
+      transition: color 150ms ease-out, background 150ms ease-out;
+    }
+
+    .nav-lletra:not(.inactiva):hover {
+      color: var(--accent-green);
+      background: var(--accent-green-soft);
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
   }
 
-  .terme h2 {
-    color: var(--accent-green);
-    font-size: 1.25rem;
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-  }
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .glossari-page {
+      padding: 0 var(--sp-4);
+    }
 
-  .terme p {
-    color: var(--text-primary);
-    margin: 0;
-    line-height: 1.5;
+    .glossari-layout {
+      gap: var(--sp-3);
+    }
+
+    .glossari-nav {
+      width: 24px;
+    }
+
+    .nav-lletra {
+      width: 20px;
+      height: 20px;
+      font-size: 10px;
+    }
+
+    .glossari-cerca-wrap {
+      max-width: 100%;
+    }
+
+    .terme {
+      padding: var(--sp-4);
+    }
   }
 </style>
+
+<script>
+  document.addEventListener('astro:page-load', () => {
+    const input = document.querySelector<HTMLInputElement>('.glossari-cerca');
+    const termes = document.querySelectorAll<HTMLElement>('.terme');
+    const grups = document.querySelectorAll<HTMLElement>('.grup-lletra');
+
+    // ── Cercador ──
+    if (input) {
+      input.addEventListener('input', () => {
+        const text = input.value.toLowerCase().trim();
+
+        termes.forEach(terme => {
+          const nom = terme.querySelector('h3')?.textContent?.toLowerCase() || '';
+          const desc = terme.querySelector('p')?.textContent?.toLowerCase() || '';
+          terme.style.display = (text === '' || nom.includes(text) || desc.includes(text))
+            ? '' : 'none';
+        });
+
+        grups.forEach(grup => {
+          const visibles = grup.querySelectorAll('.terme:not([style*="display: none"])');
+          grup.style.display = visibles.length > 0 ? '' : 'none';
+        });
+      });
+    }
+
+    // ── Lletra activa al scroll ──
+    const lletresNav = document.querySelectorAll<HTMLElement>('.nav-lletra:not(.inactiva)');
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const id = entry.target.id;
+          lletresNav.forEach(l => l.classList.remove('actual'));
+          const lNav = document.querySelector<HTMLElement>(`.nav-lletra[href="#${id}"]`);
+          if (lNav) lNav.classList.add('actual');
+        }
+      });
+    }, {
+      threshold: 0.3,
+      rootMargin: '-80px 0px -60% 0px'
+    });
+
+    grups.forEach(s => observer.observe(s));
+  });
+</script>
