@@ -106,7 +106,7 @@ try {
       <p class="subtitol">Plantes medicinals, remeis ancestrals i el coneixement etnobotànic del Bages i el Moianès que no podem deixar perdre.</p>
 
       <div class="botons">
-        <a href="/cataleg" class="boto boto-primari">Explorar l'herbari</a>
+        <a href="/herbari" class="boto boto-primari">Explorar l'herbari</a>
         <a href="/projecte" class="boto boto-secundari">Coneix el projecte</a>
       </div>
 
@@ -237,7 +237,7 @@ try {
       <div class="grid-afeccions">
 
         {afeccionsReals.map((afeccio: any) => (
-            <a href={`/cataleg?afeccio=${afeccio.slug}`} class="card-afeccio">
+            <a href={`/herbari?afeccio=${afeccio.slug}`} class="card-afeccio">
               <img
                 src={`/il·lustracions/${afeccio.slug}.svg`}
                 class="afeccio-icona"

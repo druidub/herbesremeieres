@@ -40,7 +40,7 @@ const lletresAmbContingut = new Set(Object.keys(perLletra));
 ---
 
 <Layout title="Glossari de Propietats Medicinals | Herbolari Arrel">
-  <main class="glossari-page">
+  <div class="glossari-page">
     <div class="glossari-inner">
 
       <header class="glossari-header">
@@ -86,15 +86,18 @@ const lletresAmbContingut = new Set(Object.keys(perLletra));
 
       </div>
     </div>
-  </main>
+  </div>
 </Layout>
 
 <style>
   /* ── Layout full-width ── */
   .glossari-page {
-    width: 100vw;
-    margin-left: calc(50% - 50vw);
-    padding: 0 var(--sp-6);
+    padding: 0;
+  }
+
+  :global(main:has(> .glossari-page)) {
+    padding: 0;
+    max-width: none;
   }
 
   .glossari-inner {
