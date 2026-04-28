@@ -4,38 +4,103 @@ import Layout from '../../layouts/Layout.astro';
 import { Image } from 'astro:assets';
 
 export async function getStaticPaths() {
-  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
-    query: `
-      query TotesLesPlantes {
-        plantes(first: 100) {
-          nodes {
-            slug
-            title
-            content
-            featuredImage { node { sourceUrl altText } }
-            propietats { nodes { name } }
-            familiesBotaniques { nodes { name } }
-            afeccions { nodes { name slug } }
-            dadesBotaniques {
-              nomCientific
-              altresNomsComuns
-              descripcio
-              usosMedicinals
-              precaucions
-              nivellPrecaucio
-              epocaDeRecolLeccio
-              preparacions {
-                tipus
-                instruccions
+  const [respostaPlantas, respostaFormules] = await Promise.all([
+    axios.post(import.meta.env.WP_GRAPHQL_URL, {
+      query: `
+        query ObtenirPlantes {
+          plantes(first: 100) {
+            nodes {
+              slug
+              title
+              featuredImage {
+                node { sourceUrl altText }
+              }
+              propietats {
+                nodes { name slug }
+              }
+              familiesBotaniques {
+                nodes { name slug }
+              }
+              afeccions {
+                nodes { name slug }
+              }
+              dadesBotaniques {
+                nomCientific
+                altresNomsComuns
+                descripcio
+                usosMedicinals
+                precaucions
+                nivellPrecaucio
+                epocaDeRecolLeccio
+                partUtilitzada
+                habitat
+                municipis
+                conservacio
+                notesDeConservacio
+                preparacions {
+                  tipus
+                  instruccions
+                }
+              }
+              magiaIEspiritualitat {
+                planetaRegent
+                element
+                usosMagics
+                missatge
+              }
+              culturaPopular {
+                ditesIRefranys {
+                  dita
+                  explicacio
+                }
+                jocsICostums
+                usosComestibles
+                propietatsTintories
+              }
+              altresElaboracions {
+                altresElaboracions {
+                  tipus
+                  instruccions
+                }
+              }
+              fontsIReferencies {
+                fontsireferencies {
+                  tipusDeFont
+                  referencia
+                  detall
+                }
               }
             }
           }
         }
-      }
-    `
-  });
+      `
+    }),
+    axios.post(import.meta.env.WP_GRAPHQL_URL, {
+      query: `
+        query ObtenirFormules {
+          formules(first: 100) {
+            nodes {
+              title
+              slug
+              dadesFormula {
+                descripcio
+                ingredients {
+                  planta {
+                    nodes {
+                      slug
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      `
+    }),
+  ]);
 
-  const totesLesPlantes = resposta.data?.data?.plantes?.nodes || [];
+  const totesLesPlantes = respostaPlantas.data?.data?.plantes?.nodes || [];
+  const totesFormules = respostaFormules.data?.data?.formules?.nodes || [];
 
   return totesLesPlantes.map((plantaActual) => {
     const propietatsActuals = plantaActual.propietats?.nodes?.map(p => p.name) || [];
@@ -46,6 +111,12 @@ export async function getStaticPaths() {
       return propietatsActuals.some(prop => propietatsAltraPlanta.includes(prop));
     }).slice(0, 3);
 
+    const formulesRelacionades = totesFormules.filter(formula =>
+      formula.dadesFormula?.ingredients?.some((ing: any) =>
+        ing.planta?.nodes?.some((p: any) => p.slug === plantaActual.slug)
+      )
+    );
+
     return {
       params: { slug: plantaActual.slug },
       props: {
@@ -53,12 +124,13 @@ export async function getStaticPaths() {
         relacionades: plantesRelacionades,
         familiesBotaniques: plantaActual.familiesBotaniques?.nodes || [],
         afeccions: plantaActual.afeccions?.nodes || [],
+        formulesRelacionades,
       },
     };
   });
 }
 
-const { planta, relacionades = [], familiesBotaniques = [], afeccions = [] } = Astro.props;
+const { planta, relacionades = [], familiesBotaniques = [], afeccions = [], formulesRelacionades = [] } = Astro.props;
 
 // Dades botàniques
 const dades = planta.dadesBotaniques || {};
@@ -70,34 +142,77 @@ const precaucions = dades.precaucions;
 const nivellPrecaucio = dades.nivellPrecaucio?.[0];
 const epocaDeRecolLeccio = dades.epocaDeRecolLeccio || [];
 const preparacions = dades.preparacions || [];
-const familia = familiesBotaniques[0]?.name;
+const partUtilitzada = dades.partUtilitzada || [];
+const habitat = dades.habitat;
+const municipis = dades.municipis;
+const conservacio = dades.conservacio?.[0];
+const notesDeConservacio = dades.notesDeConservacio;
 
-// Mapa de noms de preparació
+// Noves seccions
+const magia = planta.magiaIEspiritualitat || {};
+const planetaRegent = magia.planetaRegent?.[0];
+const element = magia.element?.[0];
+const usosMagics = magia.usosMagics;
+const missatgeMagic = magia.missatge;
+
+const cultura = planta.culturaPopular || {};
+const ditesIRefranys = cultura.ditesIRefranys || [];
+const jocsICostums = cultura.jocsICostums;
+const usosComestibles = cultura.usosComestibles;
+const propietatsTintories = cultura.propietatsTintories;
+
+const altresElab = planta.altresElaboracions?.altresElaboracions || [];
+const fonts = planta.fontsIReferencies?.fontsireferencies || [];
+
+const familia = familiesBotaniques[0];
+
+// Mapatge de valors ACF → etiquetes llegibles
+const ETIQUETES: Record<string, string> = {
+  // Part utilitzada
+  flors: 'Flors', fulles: 'Fulles', tiges: 'Tiges',
+  llavors: 'Llavors', fruits: 'Fruits', arrels: 'Arrels',
+  rizoma: 'Rizoma', bulb: 'Bulb', escorca: 'Escorça',
+  resina: 'Resina', sumitats_florides: 'Sumitats florides',
+  planta_sencera: 'Planta sencera',
+  // Conservació
+  abundant: 'Abundant', frequent: 'Freqüent',
+  poc_frequent: 'Poc freqüent', rara: 'Rara',
+  protegida: 'Protegida', desconegut: 'Desconegut',
+  // Nivell de precaució
+  cap: 'Cap', lleu: 'Lleu', moderat: 'Moderat', greu: 'Greu',
+  // Planeta
+  sol: 'Sol', lluna: 'Lluna', mart: 'Mart', mercuri: 'Mercuri',
+  jupiter: 'Júpiter', venus: 'Venus', saturn: 'Saturn',
+  // Element
+  foc: 'Foc', aigua: 'Aigua', terra: 'Terra', aire: 'Aire',
+  // Preparació
+  infusio: 'Infusió', decoccio: 'Decocció', cataplasma: 'Cataplasma',
+  oli_macerat: 'Oli macerat', xarop: 'Xarop', tintura: 'Tintura',
+  gargarisme: 'Gargarisme',
+  // Elaboració
+  encens_sahumeris: 'Encens / Sahumeris', cosmetica: 'Cosmètica',
+  unguent: 'Ungüent', balsam: 'Bàlsam', dentrific: 'Dentífric',
+  sabo: 'Sabó', aigua_floral: 'Aigua floral', vinagre: 'Vinagre',
+  bany: 'Bany', oli_essencial: 'Oli essencial', hidrolat: 'Hidrolat',
+  altre: 'Altre',
+  // Font
+  llibre: 'Llibre', informant_oral: 'Informant oral',
+  article: 'Article', web: 'Web', tradicio_popular: 'Tradició popular',
+};
+
+// Mapa de noms de preparació (manté compatibilitat amb guions i guions baixos)
 const nomsPreparacio: Record<string, string> = {
-  'infusio': 'Infusió',
-  'decoccio': 'Decocció',
-  'cataplasma': 'Cataplasma',
-  'oli-macerat': 'Oli macerat',
-  'xarop': 'Xarop',
-  'tintura': 'Tintura',
-  'bany': 'Bany',
-  'gargarisme': 'Gargarisme',
+  'infusio': 'Infusió', 'decoccio': 'Decocció', 'cataplasma': 'Cataplasma',
+  'oli-macerat': 'Oli macerat', 'oli_macerat': 'Oli macerat',
+  'xarop': 'Xarop', 'tintura': 'Tintura', 'bany': 'Bany', 'gargarisme': 'Gargarisme',
 };
 
 // Mesos en català
 const mesos = [
-  { num: '1', abrev: 'G' },
-  { num: '2', abrev: 'F' },
-  { num: '3', abrev: 'M' },
-  { num: '4', abrev: 'A' },
-  { num: '5', abrev: 'Mg' },
-  { num: '6', abrev: 'Jn' },
-  { num: '7', abrev: 'Jl' },
-  { num: '8', abrev: 'Ag' },
-  { num: '9', abrev: 'S' },
-  { num: '10', abrev: 'O' },
-  { num: '11', abrev: 'N' },
-  { num: '12', abrev: 'D' },
+  { num: '1', abrev: 'G' }, { num: '2', abrev: 'F' }, { num: '3', abrev: 'M' },
+  { num: '4', abrev: 'A' }, { num: '5', abrev: 'Mg' }, { num: '6', abrev: 'Jn' },
+  { num: '7', abrev: 'Jl' }, { num: '8', abrev: 'Ag' }, { num: '9', abrev: 'S' },
+  { num: '10', abrev: 'O' }, { num: '11', abrev: 'N' }, { num: '12', abrev: 'D' },
 ];
 
 // Icones SVG per tipus de preparació
@@ -106,11 +221,16 @@ const iconesPreparacio: Record<string, string> = {
   'decoccio': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="10" rx="8" ry="4"/><path d="M4 10v4c0 2.2 3.6 4 8 4s8-1.8 8-4v-4"/><path d="M9 21l-1 2"/><path d="M15 21l1 2"/><path d="M12 21v2"/></svg>`,
   'cataplasma': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 11V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2"/><path d="M14 10V4a2 2 0 0 0-2-2 2 2 0 0 0-2 2v2"/><path d="M10 10.5V6a2 2 0 0 0-2-2 2 2 0 0 0-2 2v8"/><path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8H8a8 8 0 0 1-6-3"/><path d="M8 16c1-1.5 3-2 5-1"/></svg>`,
   'oli-macerat': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l2 6H6l2-6z"/><path d="M6 8v11a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V8"/><path d="M12 12v4"/><circle cx="12" cy="18" r="1"/></svg>`,
+  'oli_macerat': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l2 6H6l2-6z"/><path d="M6 8v11a3 3 0 0 0 3 3h6a3 3 0 0 0 3-3V8"/><path d="M12 12v4"/><circle cx="12" cy="18" r="1"/></svg>`,
   'xarop': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2h8l1 5H7l1-5z"/><path d="M7 7v12a3 3 0 0 0 3 3h4a3 3 0 0 0 3-3V7"/><line x1="10" y1="13" x2="14" y2="13"/><line x1="12" y1="11" x2="12" y2="15"/></svg>`,
   'tintura': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v4h-4z"/><path d="M8 6h8v2H8z"/><path d="M8 8v11a3 3 0 0 0 3 3h2a3 3 0 0 0 3-3V8"/><line x1="12" y1="12" x2="12" y2="16"/></svg>`,
-  'bany': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2c-3 0-5 2.5-5 6 0 4.5 5 10 5 10s5-5.5 5-10c0-3.5-2-6-5-6z"/><path d="M12 8v3"/><circle cx="12" cy="13" r="0.5"/></svg>`,
+  'bany': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6 6.5 3.5a1.5 1.5 0 0 0-1-.5C4.683 3 4 3.683 4 4.5V17a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5"/><line x1="10" y1="5" x2="8" y2="7"/><line x1="2" y1="12" x2="22" y2="12"/></svg>`,
   'gargarisme': `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="8" r="6"/><path d="M16 10c0 3-1 5-1 8"/><path d="M18 14c-1 0-2 .5-3 1"/><path d="M18 17c-1 0-2 .5-3 1"/><path d="M18 20c-1 0-2 .5-3 1"/></svg>`,
 };
+
+const teCulturaPopular = ditesIRefranys.length > 0 || jocsICostums || propietatsTintories;
+const teMagia = planetaRegent || usosMagics || missatgeMagic;
+const teHabitat = habitat || municipis;
 ---
 
 <Layout title={`${planta.title} - Herbes Remeieres`}>
@@ -123,7 +243,9 @@ const iconesPreparacio: Record<string, string> = {
       <span class="fletxa">&larr;</span> Tornar a l'herbari
     </a>
     {familia && (
-      <span class="breadcrumb-familia">Familia: {familia}</span>
+      <a href={`/herbari?familia=${familia.slug}`} class="breadcrumb-familia">
+        {familia.name}
+      </a>
     )}
   </nav>
 
@@ -150,20 +272,73 @@ const iconesPreparacio: Record<string, string> = {
         <p class="altres-noms">Altres noms: {altresNoms}</p>
       )}
 
+      {/* Part utilitzada */}
+      {partUtilitzada.length > 0 && (
+        <div class="capcalera-meta">
+          <span class="meta-etiqueta">Part utilitzada:</span>
+          <div class="tags-container tags-container--inline">
+            {partUtilitzada.map((part: string) => (
+              <span class="tag">{ETIQUETES[part] || part}</span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Estat de conservació */}
+      {conservacio && conservacio !== 'desconegut' && (
+        <div class="capcalera-meta">
+          <span class="meta-etiqueta">Conservació:</span>
+          <span class="badge-conservacio" data-nivell={conservacio}>
+            {ETIQUETES[conservacio] || conservacio}
+          </span>
+        </div>
+      )}
+      {notesDeConservacio && (
+        <p class="notes-conservacio-capcalera" set:html={notesDeConservacio} />
+      )}
+
       <div class="tags-container">
-        {planta.propietats?.nodes?.map((prop) => (
+        {planta.propietats?.nodes?.map((prop: any) => (
           <span class="tag">{prop.name}</span>
         ))}
       </div>
-
-      {descripcio && (
-        <p class="descripcio-breu">{descripcio}</p>
-      )}
     </div>
   </div>
 
   {/* Cos central */}
   <div class="cos">
+
+    {/* Descripció */}
+    {descripcio && (
+      <section class="seccio page-enter" style="animation-delay: 80ms;">
+        <h2>Descripció</h2>
+        <div class="seccio-contingut" set:html={descripcio} />
+      </section>
+    )}
+
+    {/* Hàbitat i distribució */}
+    {teHabitat && (
+      <section class="seccio page-enter" style="animation-delay: 100ms;">
+        <h2>
+          <svg class="seccio-icona" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+          Hàbitat i distribució
+        </h2>
+        <div class="seccio-habitat">
+          {habitat && (
+            <div class="habitat-bloc">
+              <span class="habitat-label">Hàbitat</span>
+              <div class="seccio-contingut" set:html={habitat} />
+            </div>
+          )}
+          {municipis && (
+            <div class="habitat-bloc">
+              <span class="habitat-label">On trobar-la</span>
+              <div class="seccio-contingut" set:html={municipis} />
+            </div>
+          )}
+        </div>
+      </section>
+    )}
 
     {/* Usos Medicinals */}
     <section class="seccio page-enter" style="animation-delay: 120ms;">
@@ -171,22 +346,14 @@ const iconesPreparacio: Record<string, string> = {
       <div class="seccio-contingut" set:html={usosMedicinals || '<p>Cap us registrat.</p>'} />
     </section>
 
-    {/* Historia, magia i tradicions */}
-    {planta.content && (
-      <section class="seccio page-enter" style="animation-delay: 160ms;">
-        <h2>Historia, magia i tradicions</h2>
-        <div class="seccio-contingut" set:html={planta.content} />
-      </section>
-    )}
-
     {/* Com preparar-la */}
     {preparacions.length > 0 && (
-      <section class="seccio page-enter" style="animation-delay: 200ms;">
+      <section class="seccio page-enter" style="animation-delay: 160ms;">
         <h2>Com preparar-la</h2>
         <div class="preparacions-grid">
-          {preparacions.map((prep) => {
+          {preparacions.map((prep: any) => {
             const tipusSlug = prep.tipus?.[0] || '';
-            const tipusNom = nomsPreparacio[tipusSlug] || tipusSlug;
+            const tipusNom = nomsPreparacio[tipusSlug] || ETIQUETES[tipusSlug] || tipusSlug;
             const icona = iconesPreparacio[tipusSlug] || '';
             return (
               <div class="preparacio-card">
@@ -202,11 +369,35 @@ const iconesPreparacio: Record<string, string> = {
       </section>
     )}
 
+    {/* Altres elaboracions */}
+    {altresElab.length > 0 && (
+      <section class="seccio page-enter" style="animation-delay: 180ms;">
+        <h2>
+          <svg class="seccio-icona" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/></svg>
+          Altres elaboracions
+        </h2>
+        <div class="preparacions-grid">
+          {altresElab.map((elab: any) => {
+            const tipusSlug = elab.tipus?.[0] || '';
+            const tipusNom = ETIQUETES[tipusSlug] || tipusSlug;
+            return (
+              <div class="preparacio-card">
+                <div class="preparacio-header">
+                  <h3 class="preparacio-titol">{tipusNom}</h3>
+                </div>
+                <div class="preparacio-instruccions" set:html={elab.instruccions} />
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    )}
+
     {/* Precaucions */}
     {precaucions && (
-      <section class="seccio page-enter" style="animation-delay: 240ms;">
+      <section class="seccio page-enter" style="animation-delay: 200ms;">
         <h2>Precaucions</h2>
-        <div class="alerta-precaucions">
+        <div class="seccio-precaucions" data-nivell={nivellPrecaucio || 'cap'}>
           <div class="alerta-header">
             <svg class="alerta-icona" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
@@ -214,14 +405,93 @@ const iconesPreparacio: Record<string, string> = {
               <line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
             {nivellPrecaucio && nivellPrecaucio !== 'cap' && (
-              <span class={`badge-nivell badge-${nivellPrecaucio}`}>
-                {nivellPrecaucio === 'lleu' && 'Lleu'}
-                {nivellPrecaucio === 'moderat' && 'Moderat'}
-                {nivellPrecaucio === 'greu' && 'Greu'}
+              <span class="badge-precaucio" data-nivell={nivellPrecaucio}>
+                {ETIQUETES[nivellPrecaucio] || nivellPrecaucio}
               </span>
             )}
           </div>
           <div class="alerta-text" set:html={precaucions} />
+        </div>
+      </section>
+    )}
+
+    {/* Usos comestibles */}
+    {usosComestibles && (
+      <section class="seccio page-enter" style="animation-delay: 220ms;">
+        <h2>
+          <svg class="seccio-icona" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l19-9-9 19-2-8-8-2z"/></svg>
+          Usos comestibles
+        </h2>
+        <div class="seccio-contingut" set:html={usosComestibles} />
+      </section>
+    )}
+
+    {/* Cultura popular */}
+    {teCulturaPopular && (
+      <section class="seccio page-enter" style="animation-delay: 240ms;">
+        <h2>
+          <svg class="seccio-icona" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          Cultura popular
+        </h2>
+
+        {ditesIRefranys.length > 0 && (
+          <div class="cultura-subseccio">
+            <h3 class="cultura-subtitol">Dites i refranys</h3>
+            {ditesIRefranys.map((item: any) => (
+              <blockquote class="dita-blockquote">
+                <span set:html={item.dita} />
+                {item.explicacio && (
+                  <p class="dita-explicacio" set:html={item.explicacio} />
+                )}
+              </blockquote>
+            ))}
+          </div>
+        )}
+
+        {jocsICostums && (
+          <div class="cultura-subseccio">
+            <h3 class="cultura-subtitol">Jocs i costums</h3>
+            <div class="seccio-contingut" set:html={jocsICostums} />
+          </div>
+        )}
+
+        {propietatsTintories && (
+          <div class="cultura-subseccio">
+            <h3 class="cultura-subtitol">Propietats tintòries</h3>
+            <div class="seccio-contingut" set:html={propietatsTintories} />
+          </div>
+        )}
+      </section>
+    )}
+
+    {/* Màgia i espiritualitat */}
+    {teMagia && (
+      <section class="seccio page-enter" style="animation-delay: 260ms;">
+        <h2>
+          <svg class="seccio-icona" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M3 5h4"/><path d="M19 17v4"/><path d="M17 19h4"/></svg>
+          Màgia i espiritualitat
+        </h2>
+        <div class="seccio-magia">
+          {(planetaRegent || element) && (
+            <div class="magia-badges">
+              {planetaRegent && (
+                <span class="badge-planeta">
+                  {ETIQUETES[planetaRegent] || planetaRegent}
+                </span>
+              )}
+              {element && (
+                <span class="badge-element">
+                  {ETIQUETES[element] || element}
+                </span>
+              )}
+            </div>
+          )}
+          {usosMagics && (
+            <div class="seccio-contingut magia-text" set:html={usosMagics} />
+          )}
+          {missatgeMagic && (
+            <blockquote class="missatge-magic" set:html={missatgeMagic} />
+          )}
         </div>
       </section>
     )}
@@ -242,14 +512,33 @@ const iconesPreparacio: Record<string, string> = {
         </div>
       </section>
     )}
+
   </div>
+
+  {/* Fórmules on participa */}
+  {formulesRelacionades.length > 0 && (
+    <div class="seccio-relacionades seccio-formules page-enter" style="animation-delay: 300ms;">
+      <h2>Fórmules on participa</h2>
+      <div class="graella-formules">
+        {formulesRelacionades.map((formula: any) => (
+          <a href={`/formula/${formula.slug}`} class="targeta-formula">
+            <h4>{formula.title}</h4>
+            {formula.dadesFormula?.descripcio && (
+              <p class="formula-descripcio" set:html={formula.dadesFormula.descripcio} />
+            )}
+            <span class="relacionada-link">Veure fórmula <span class="fletxa">&rarr;</span></span>
+          </a>
+        ))}
+      </div>
+    </div>
+  )}
 
   {/* Plantes relacionades */}
   {relacionades.length > 0 && (
     <div class="seccio-relacionades page-enter" style="animation-delay: 320ms;">
       <h2>Plantes relacionades</h2>
       <div class="graella-relacionades">
-        {relacionades.map(relacionada => (
+        {relacionades.map((relacionada: any) => (
           <a href={`/planta/${relacionada.slug}`} class="targeta-relacionada">
             {relacionada.featuredImage?.node && (
               <Image
@@ -269,6 +558,26 @@ const iconesPreparacio: Record<string, string> = {
           </a>
         ))}
       </div>
+    </div>
+  )}
+
+  {/* Fonts i referències */}
+  {fonts.length > 0 && (
+    <div class="seccio-fonts page-enter" style="animation-delay: 340ms;">
+      <h2>Fonts i referències</h2>
+      <ol class="fonts-llista">
+        {fonts.map((font: any, i: number) => {
+          const tipus = font.tipusDeFont?.[0] || '';
+          return (
+            <li class="font-item">
+              <span class="font-numero">[{i + 1}]</span>
+              {tipus && <span class="font-tipus"> {ETIQUETES[tipus] || tipus} —</span>}
+              {font.referencia && <span> {font.referencia}.</span>}
+              {font.detall && <span class="font-detall"> {font.detall}</span>}
+            </li>
+          );
+        })}
+      </ol>
     </div>
   )}
 
@@ -305,6 +614,13 @@ const iconesPreparacio: Record<string, string> = {
 
   .breadcrumb-familia {
     font-family: var(--font-body);
+    color: var(--text-tertiary);
+    text-decoration: none;
+    font-style: italic;
+  }
+
+  .breadcrumb-familia:hover {
+    color: var(--accent-green);
   }
 
   /* ── Capçalera ───────────────────────────────────── */
@@ -346,7 +662,22 @@ const iconesPreparacio: Record<string, string> = {
     font-size: 14px;
     color: var(--text-tertiary);
     font-family: var(--font-body);
-    margin: 0 0 var(--sp-4) 0;
+    margin: 0 0 var(--sp-3) 0;
+  }
+
+  .capcalera-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-3);
+  }
+
+  .meta-etiqueta {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-tertiary);
+    white-space: nowrap;
   }
 
   .tags-container {
@@ -356,11 +687,49 @@ const iconesPreparacio: Record<string, string> = {
     margin-bottom: var(--sp-4);
   }
 
-  .descripcio-breu {
-    color: var(--text-secondary);
-    line-height: 1.7;
+  .tags-container--inline {
+    margin-bottom: 0;
+  }
+
+  /* ── Tags ────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
     font-family: var(--font-body);
-    margin: 0;
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  /* ── Badge conservació ───────────────────────────── */
+  .badge-conservacio {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+
+  .badge-conservacio[data-nivell="abundant"],
+  .badge-conservacio[data-nivell="frequent"] {
+    background: rgba(74, 103, 65, 0.12);
+    color: var(--accent-green);
+  }
+
+  .badge-conservacio[data-nivell="poc_frequent"],
+  .badge-conservacio[data-nivell="rara"] {
+    background: rgba(212, 168, 67, 0.15);
+    color: var(--color-caution);
+  }
+
+  .badge-conservacio[data-nivell="protegida"] {
+    background: rgba(139, 58, 58, 0.12);
+    color: var(--color-danger);
   }
 
   /* ── Cos central ─────────────────────────────────── */
@@ -382,10 +751,21 @@ const iconesPreparacio: Record<string, string> = {
 
   .seccio h2 {
     font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
     border-bottom: 1px solid var(--border-subtle);
     padding-bottom: var(--sp-3);
     margin-bottom: var(--sp-6);
     margin-top: 0;
+  }
+
+  .seccio-icona {
+    color: var(--text-tertiary);
+    flex-shrink: 0;
   }
 
   .seccio-contingut {
@@ -400,6 +780,32 @@ const iconesPreparacio: Record<string, string> = {
 
   .seccio-contingut :global(p:last-child) {
     margin-bottom: 0;
+  }
+
+  /* ── Hàbitat ─────────────────────────────────────── */
+  .seccio-habitat {
+    background: var(--bg-secondary);
+    padding: var(--sp-5);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-5);
+  }
+
+  .habitat-bloc {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+
+  .habitat-label {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   /* ── Preparacions ────────────────────────────────── */
@@ -448,11 +854,16 @@ const iconesPreparacio: Record<string, string> = {
   }
 
   /* ── Precaucions ─────────────────────────────────── */
-  .alerta-precaucions {
+  .seccio-precaucions {
+    background: rgba(212, 168, 67, 0.08);
     padding: var(--sp-5);
-    border-left: 3px solid var(--accent-amber);
-    border-radius: 0;
-    background: var(--accent-amber-soft);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border-left: 4px solid var(--color-caution);
+  }
+
+  .seccio-precaucions[data-nivell="greu"] {
+    border-left-color: var(--color-danger);
+    background: rgba(139, 58, 58, 0.06);
   }
 
   .alerta-header {
@@ -463,30 +874,36 @@ const iconesPreparacio: Record<string, string> = {
   }
 
   .alerta-icona {
-    color: var(--accent-amber);
+    color: var(--color-caution);
     flex-shrink: 0;
   }
 
-  .badge-nivell {
-    display: inline-block;
+  .seccio-precaucions[data-nivell="greu"] .alerta-icona {
+    color: var(--color-danger);
+  }
+
+  .badge-precaucio {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
     padding: var(--sp-1) var(--sp-3);
     border-radius: var(--radius-pill);
     font-family: var(--font-body);
     font-size: 0.75rem;
-    font-weight: 500;
+    font-weight: 600;
   }
 
-  .badge-lleu {
-    background: var(--accent-green-soft);
+  .badge-precaucio[data-nivell="lleu"] {
+    background: rgba(74, 103, 65, 0.12);
     color: var(--accent-green);
   }
 
-  .badge-moderat {
-    background: var(--accent-amber-soft);
-    color: var(--accent-amber);
+  .badge-precaucio[data-nivell="moderat"] {
+    background: rgba(212, 168, 67, 0.15);
+    color: var(--color-caution);
   }
 
-  .badge-greu {
+  .badge-precaucio[data-nivell="greu"] {
     background: rgba(139, 58, 58, 0.12);
     color: var(--color-danger);
   }
@@ -498,6 +915,107 @@ const iconesPreparacio: Record<string, string> = {
   }
 
   .alerta-text :global(p) {
+    margin: 0;
+  }
+
+  .notes-conservacio-capcalera {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    line-height: 1.5;
+    margin: var(--sp-2) 0 0 0;
+  }
+
+  .notes-conservacio-capcalera :global(p) {
+    margin: 0;
+  }
+
+  /* ── Cultura popular ─────────────────────────────── */
+  .cultura-subseccio {
+    margin-bottom: var(--sp-6);
+  }
+
+  .cultura-subseccio:last-child {
+    margin-bottom: 0;
+  }
+
+  .cultura-subtitol {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-4) 0;
+  }
+
+  .dita-blockquote {
+    border-left: 3px solid var(--accent-amber);
+    padding: var(--sp-3) var(--sp-5);
+    margin: var(--sp-4) 0;
+    background: var(--bg-secondary);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.125rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+  }
+
+  .dita-explicacio {
+    font-family: var(--font-body);
+    font-style: normal;
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-top: var(--sp-2);
+    margin-bottom: 0;
+  }
+
+  /* ── Màgia i espiritualitat ──────────────────────── */
+  .seccio-magia {
+    background: var(--bg-secondary);
+    padding: var(--sp-5);
+    border-radius: var(--radius-md);
+    border: 0.5px solid var(--border-subtle);
+  }
+
+  .magia-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-bottom: var(--sp-4);
+  }
+
+  .badge-planeta,
+  .badge-element {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 500;
+    background: rgba(212, 168, 67, 0.12);
+    color: var(--accent-amber);
+  }
+
+  .magia-text {
+    margin-bottom: var(--sp-4);
+  }
+
+  .missatge-magic {
+    border-left: 3px solid var(--accent-green);
+    padding: var(--sp-3) var(--sp-5);
+    margin: 0;
+    background: rgba(74, 103, 65, 0.06);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-family: var(--font-display);
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+  }
+
+  .missatge-magic :global(p) {
     margin: 0;
   }
 
@@ -530,6 +1048,54 @@ const iconesPreparacio: Record<string, string> = {
     color: var(--bg-primary);
   }
 
+  /* ── Fórmules relacionades ───────────────────────── */
+  .seccio-formules {
+    margin-bottom: 0;
+  }
+
+  .graella-formules {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--sp-5);
+  }
+
+  .targeta-formula {
+    text-decoration: none;
+    color: inherit;
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
+  }
+
+  .targeta-formula h4 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .formula-descripcio {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .formula-descripcio :global(p) {
+    margin: 0;
+  }
+
   /* ── Plantes relacionades ────────────────────────── */
   .seccio-relacionades {
     border-top: 1px solid var(--border-subtle);
@@ -540,6 +1106,9 @@ const iconesPreparacio: Record<string, string> = {
 
   .seccio-relacionades h2 {
     font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
     margin-top: 0;
     margin-bottom: var(--sp-5);
   }
@@ -586,7 +1155,53 @@ const iconesPreparacio: Record<string, string> = {
     font-family: var(--font-body);
   }
 
-  /* ── Animacions (Emil Kowalski) ──────────────────── */
+  /* ── Fonts i referències ─────────────────────────── */
+  .seccio-fonts {
+    border-top: 1px solid var(--border-default);
+    padding-top: var(--sp-6);
+    margin-top: var(--sp-7);
+  }
+
+  .seccio-fonts h2 {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-top: 0;
+    margin-bottom: var(--sp-4);
+  }
+
+  .fonts-llista {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .font-item {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    margin-bottom: var(--sp-2);
+    line-height: 1.6;
+  }
+
+  .font-numero {
+    font-weight: 700;
+    color: var(--text-secondary);
+    margin-right: var(--sp-1);
+  }
+
+  .font-tipus {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .font-detall {
+    color: var(--text-tertiary);
+    font-style: italic;
+  }
+
+  /* ── Animacions ──────────────────────────────────── */
   @media (prefers-reduced-motion: no-preference) {
     .imatge-wrapper img {
       transition: transform 300ms ease-out;
@@ -622,7 +1237,17 @@ const iconesPreparacio: Record<string, string> = {
       border-color: var(--accent-green);
     }
 
-    .breadcrumb-link {
+    .targeta-formula {
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
+    }
+
+    .targeta-formula:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-amber);
+    }
+
+    .breadcrumb-link,
+    .breadcrumb-familia {
       transition: color 200ms ease-out;
     }
   }
@@ -643,7 +1268,8 @@ const iconesPreparacio: Record<string, string> = {
       max-height: 400px;
     }
 
-    .graella-relacionades {
+    .graella-relacionades,
+    .graella-formules {
       grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     }
   }
@@ -662,7 +1288,8 @@ const iconesPreparacio: Record<string, string> = {
       margin: 0 auto;
     }
 
-    .graella-relacionades {
+    .graella-relacionades,
+    .graella-formules {
       grid-template-columns: 1fr;
     }
   }

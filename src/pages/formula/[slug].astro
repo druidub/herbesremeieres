@@ -1,0 +1,480 @@
+---
+import axios from 'axios';
+import Layout from '../../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+export async function getStaticPaths() {
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+    query: `
+      query ObtenirFormules {
+        formules(first: 100) {
+          nodes {
+            title
+            slug
+            featuredImage {
+              node { sourceUrl altText }
+            }
+            propietats {
+              nodes { name slug }
+            }
+            afeccions {
+              nodes { name slug }
+            }
+            dadesFormula {
+              descripcio
+              ingredients {
+                planta {
+                  nodes {
+                    ... on Planta {
+                      title
+                      slug
+                      featuredImage {
+                        node { sourceUrl altText }
+                      }
+                    }
+                  }
+                }
+                part
+                quantitat
+              }
+              preparacio
+              usos
+              precaucions
+              fontTradicio
+            }
+          }
+        }
+      }
+    `
+  });
+
+  const totesFormules = resposta.data?.data?.formules?.nodes || [];
+
+  return totesFormules.map((formula: any) => ({
+    params: { slug: formula.slug },
+    props: { formula },
+  }));
+}
+
+const { formula } = Astro.props;
+
+const dades = formula.dadesFormula || {};
+const descripcio = dades.descripcio;
+const ingredients = dades.ingredients || [];
+const preparacio = dades.preparacio;
+const usos = dades.usos;
+const precaucions = dades.precaucions;
+const fontTradicio = dades.fontTradicio;
+
+const ETIQUETES: Record<string, string> = {
+  flors: 'Flors', fulles: 'Fulles', tiges: 'Tiges',
+  llavors: 'Llavors', fruits: 'Fruits', arrels: 'Arrels',
+  rizoma: 'Rizoma', bulb: 'Bulb', escorca: 'Escorça',
+  resina: 'Resina', sumitats_florides: 'Sumitats florides',
+  planta_sencera: 'Planta sencera',
+};
+---
+
+<Layout title={`${formula.title} - Herbes Remeieres`}>
+
+  <div class="formula-contenidor page-enter">
+
+    {/* Breadcrumb */}
+    <nav class="breadcrumb">
+      <a href="/formules" class="breadcrumb-link">
+        <span class="fletxa-esq">&larr;</span> Tornar a les fórmules
+      </a>
+    </nav>
+
+    {/* Capçalera */}
+    <div class="formula-capcalera">
+      <h1>{formula.title}</h1>
+
+      <div class="capcalera-tags">
+        {formula.propietats?.nodes?.map((prop: any) => (
+          <span class="tag">{prop.name}</span>
+        ))}
+        {formula.afeccions?.nodes?.map((afec: any) => (
+          <span class="tag tag--afeccio">{afec.name}</span>
+        ))}
+      </div>
+    </div>
+
+    {/* Imatge destacada */}
+    {formula.featuredImage?.node && (
+      <div class="formula-imatge">
+        <Image
+          src={formula.featuredImage.node.sourceUrl}
+          alt={formula.featuredImage.node.altText || formula.title}
+          width={1000}
+          height={500}
+        />
+      </div>
+    )}
+
+    {/* Cos */}
+    <div class="cos">
+
+      {/* Història i descripció */}
+      {descripcio && (
+        <section class="seccio">
+          <h2>Història i descripció</h2>
+          <div class="seccio-contingut" set:html={descripcio} />
+        </section>
+      )}
+
+      {/* Ingredients */}
+      {ingredients.length > 0 && (
+        <section class="seccio">
+          <h2>Ingredients</h2>
+          <div class="ingredients-grid">
+            {ingredients.map((ing: any) => {
+              const planta = ing.planta?.nodes?.[0];
+              const partSlug = ing.part?.[0] || '';
+              const partText = ETIQUETES[partSlug] || partSlug || null;
+              const quantitat = ing.quantitat || null;
+
+              if (planta) {
+                return (
+                  <a href={`/planta/${planta.slug}`} class="ingredient-card">
+                    {planta.featuredImage?.node ? (
+                      <Image
+                        src={planta.featuredImage.node.sourceUrl}
+                        alt={planta.title}
+                        width={160}
+                        height={160}
+                        class="ingredient-img"
+                      />
+                    ) : (
+                      <div class="ingredient-img ingredient-img--buit">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.97 0 9-3.58 9-8 0-3-1.5-5.5-4-7-1 2-2 3.5-4 4-2-2.5-2-6-1-8C8.5 2 3 6.5 3 12c0 5.52 4.03 10 9 10z"/></svg>
+                      </div>
+                    )}
+                    <span class="ingredient-nom">{planta.title}</span>
+                    {partText && <span class="ingredient-part">{partText}</span>}
+                    {quantitat && <span class="ingredient-quantitat">{quantitat}</span>}
+                  </a>
+                );
+              } else {
+                return (
+                  <div class="ingredient-card ingredient-card--sense-planta">
+                    <div class="ingredient-img ingredient-img--buit">
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.97 0 9-3.58 9-8 0-3-1.5-5.5-4-7-1 2-2 3.5-4 4-2-2.5-2-6-1-8C8.5 2 3 6.5 3 12c0 5.52 4.03 10 9 10z"/></svg>
+                    </div>
+                    {partText && <span class="ingredient-nom">{partText}</span>}
+                    {quantitat && <span class="ingredient-quantitat">{quantitat}</span>}
+                  </div>
+                );
+              }
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* Preparació */}
+      {preparacio && (
+        <section class="seccio">
+          <h2>Preparació</h2>
+          <div class="seccio-contingut" set:html={preparacio} />
+        </section>
+      )}
+
+      {/* Usos */}
+      {usos && (
+        <section class="seccio">
+          <h2>Usos</h2>
+          <div class="seccio-contingut" set:html={usos} />
+        </section>
+      )}
+
+      {/* Precaucions */}
+      {precaucions && (
+        <section class="seccio">
+          <h2>Precaucions</h2>
+          <div class="seccio-precaucions">
+            <div class="alerta-header">
+              <svg class="alerta-icona" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+              </svg>
+            </div>
+            <div class="alerta-text" set:html={precaucions} />
+          </div>
+        </section>
+      )}
+
+    </div>
+
+    {/* Font / tradició */}
+    {fontTradicio && (
+      <div class="font-tradicio">
+        <span class="font-tradicio-etiqueta">Font:</span>
+        <span set:html={fontTradicio} />
+      </div>
+    )}
+
+  </div>
+
+</Layout>
+
+<style>
+  /* ── Contenidor ──────────────────────────────────── */
+  .formula-contenidor {
+    max-width: 860px;
+    margin: 0 auto;
+  }
+
+  /* ── Breadcrumb ──────────────────────────────────── */
+  .breadcrumb {
+    margin-bottom: var(--sp-5);
+  }
+
+  .breadcrumb-link {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+  }
+
+  .breadcrumb-link:hover {
+    color: var(--accent-green);
+  }
+
+  .fletxa-esq {
+    display: inline-block;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .fletxa-esq { transition: transform 200ms ease-out; }
+    .breadcrumb-link:hover .fletxa-esq { transform: translateX(-4px); }
+  }
+
+  /* ── Capçalera ───────────────────────────────────── */
+  .formula-capcalera {
+    margin-bottom: var(--sp-6);
+  }
+
+  .formula-capcalera h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-4) 0;
+  }
+
+  .capcalera-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  /* ── Tags ────────────────────────────────────────── */
+  .tag {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  .tag--afeccio {
+    background: rgba(212, 168, 67, 0.12);
+    color: var(--accent-amber);
+  }
+
+  /* ── Imatge ──────────────────────────────────────── */
+  .formula-imatge {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: var(--sp-7);
+  }
+
+  .formula-imatge img {
+    width: 100%;
+    max-height: 460px;
+    object-fit: cover;
+    display: block;
+  }
+
+  /* ── Cos i seccions ──────────────────────────────── */
+  .cos {
+    padding-top: var(--sp-3);
+  }
+
+  .seccio {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: var(--sp-7);
+    margin-top: var(--sp-7);
+  }
+
+  .seccio:first-child {
+    border-top: none;
+    padding-top: 0;
+    margin-top: 0;
+  }
+
+  .seccio h2 {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: var(--sp-3);
+    margin: 0 0 var(--sp-6) 0;
+  }
+
+  .seccio-contingut {
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .seccio-contingut :global(p) { margin-bottom: var(--sp-4); }
+  .seccio-contingut :global(p:last-child) { margin-bottom: 0; }
+
+  /* ── Ingredients ─────────────────────────────────── */
+  .ingredients-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--sp-4);
+  }
+
+  .ingredient-card {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--sp-4);
+    text-align: center;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .ingredient-card--sense-planta {
+    cursor: default;
+  }
+
+  .ingredient-img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .ingredient-img--buit {
+    background: var(--bg-tertiary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+
+  .ingredient-nom {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.25;
+  }
+
+  .ingredient-part {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+  }
+
+  .ingredient-quantitat {
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  /* ── Precaucions ─────────────────────────────────── */
+  .seccio-precaucions {
+    background: rgba(212, 168, 67, 0.08);
+    padding: var(--sp-5);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    border-left: 4px solid var(--color-caution);
+  }
+
+  .alerta-header {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-3);
+    margin-bottom: var(--sp-3);
+  }
+
+  .alerta-icona {
+    color: var(--color-caution);
+    flex-shrink: 0;
+  }
+
+  .alerta-text {
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .alerta-text :global(p) { margin: 0; }
+
+  /* ── Font / tradició ─────────────────────────────── */
+  .font-tradicio {
+    border-top: 1px solid var(--border-default);
+    padding-top: var(--sp-5);
+    margin-top: var(--sp-7);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--text-tertiary);
+    line-height: 1.6;
+  }
+
+  .font-tradicio :global(p) { margin: 0; display: inline; }
+
+  .font-tradicio-etiqueta {
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-right: var(--sp-1);
+  }
+
+  /* ── Animacions ──────────────────────────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    .ingredient-card:not(.ingredient-card--sense-planta) {
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
+    }
+
+    .ingredient-card:not(.ingredient-card--sense-planta):hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-green);
+    }
+
+    .formula-imatge img {
+      transition: transform 300ms ease-out;
+    }
+
+    .formula-imatge:hover img {
+      transform: scale(1.02);
+    }
+  }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 600px) {
+    .ingredients-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    }
+  }
+</style>

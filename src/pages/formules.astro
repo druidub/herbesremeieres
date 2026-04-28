@@ -1,0 +1,305 @@
+---
+import axios from 'axios';
+import Layout from '../layouts/Layout.astro';
+import { Image } from 'astro:assets';
+
+let llistaFormules = [];
+let missatgeError = null;
+
+try {
+  const resposta = await axios.post(import.meta.env.WP_GRAPHQL_URL, {
+    query: `
+      query ObtenirFormules {
+        formules(first: 100) {
+          nodes {
+            title
+            slug
+            featuredImage {
+              node { sourceUrl altText }
+            }
+            propietats {
+              nodes { name slug }
+            }
+            afeccions {
+              nodes { name slug }
+            }
+            dadesFormula {
+              descripcio
+              ingredients {
+                planta {
+                  nodes {
+                    ... on Planta {
+                      title
+                      slug
+                    }
+                  }
+                }
+                part
+                quantitat
+              }
+            }
+          }
+        }
+      }
+    `
+  });
+
+  llistaFormules = resposta.data?.data?.formules?.nodes || [];
+} catch (error) {
+  missatgeError = error.message;
+}
+---
+
+<Layout title="Fórmules magistrals - Herbes Remeieres">
+
+  <div class="formules-contenidor page-enter">
+
+    <div class="formules-header">
+      <h1>Fórmules magistrals</h1>
+      <p class="subtitol">Preparats tradicionals que combinen diverses plantes remeieres</p>
+    </div>
+
+    {missatgeError && (
+      <div class="error-box">
+        <p>No hem pogut carregar les fórmules: {missatgeError}</p>
+      </div>
+    )}
+
+    {!missatgeError && llistaFormules.length === 0 && (
+      <p class="buit">Encara no hi ha fórmules publicades.</p>
+    )}
+
+    {!missatgeError && llistaFormules.length > 0 && (
+      <div class="formules-grid">
+        {llistaFormules.map((formula) => {
+          const nomsPlantes = formula.dadesFormula?.ingredients
+            ?.map((ing: any) => ing.planta?.nodes?.[0]?.title)
+            .filter(Boolean)
+            .join(', ') || '';
+
+          const desc = formula.dadesFormula?.descripcio || '';
+          const descBreu = desc.length > 150 ? desc.substring(0, 150) + '…' : desc;
+
+          return (
+            <article class="formula-card">
+              {formula.featuredImage?.node && (
+                <div class="card-imatge">
+                  <Image
+                    src={formula.featuredImage.node.sourceUrl}
+                    alt={formula.featuredImage.node.altText || formula.title}
+                    width={700}
+                    height={394}
+                  />
+                </div>
+              )}
+
+              <div class="card-cos">
+                <h3 class="card-titol">{formula.title}</h3>
+
+                {nomsPlantes && (
+                  <p class="card-ingredients">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22c4.97 0 9-3.58 9-8 0-3-1.5-5.5-4-7-1 2-2 3.5-4 4-2-2.5-2-6-1-8C8.5 2 3 6.5 3 12c0 5.52 4.03 10 9 10z"/></svg>
+                    {nomsPlantes}
+                  </p>
+                )}
+
+                {descBreu && (
+                  <p class="card-descripcio">{descBreu}</p>
+                )}
+
+                {formula.propietats?.nodes?.length > 0 && (
+                  <div class="card-tags">
+                    {formula.propietats.nodes.map((prop: any) => (
+                      <span class="tag">{prop.name}</span>
+                    ))}
+                  </div>
+                )}
+
+                <a href={`/formula/${formula.slug}`} class="card-link">
+                  Veure fórmula <span class="fletxa">→</span>
+                </a>
+              </div>
+            </article>
+          );
+        })}
+      </div>
+    )}
+
+  </div>
+
+</Layout>
+
+<style>
+  .formules-contenidor {
+    max-width: 1100px;
+    margin: 0 auto;
+  }
+
+  .formules-header {
+    margin-bottom: var(--sp-7);
+  }
+
+  .formules-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 400;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin: 0 0 var(--sp-3) 0;
+  }
+
+  .subtitol {
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.6;
+  }
+
+  /* ── Grid ────────────────────────────────────────── */
+  .formules-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: var(--sp-5);
+  }
+
+  /* ── Card ────────────────────────────────────────── */
+  .formula-card {
+    background: var(--bg-secondary);
+    border: 0.5px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .card-imatge {
+    aspect-ratio: 16 / 9;
+    overflow: hidden;
+  }
+
+  .card-imatge img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .card-cos {
+    padding: var(--sp-5);
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    flex: 1;
+  }
+
+  .card-titol {
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin: 0;
+    line-height: 1.25;
+  }
+
+  .card-ingredients {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--sp-2);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--accent-green);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .card-ingredients svg {
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .card-descripcio {
+    font-family: var(--font-body);
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+  }
+
+  .tag {
+    display: inline-block;
+    padding: var(--sp-1) var(--sp-3);
+    border-radius: var(--radius-pill);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    background: var(--tag-bg);
+    color: var(--tag-text);
+  }
+
+  .card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    color: var(--accent-green);
+    text-decoration: none;
+    margin-top: auto;
+    padding-top: var(--sp-2);
+  }
+
+  /* ── Errors / buit ───────────────────────────────── */
+  .error-box {
+    background: rgba(139, 58, 58, 0.08);
+    border: 1px solid rgba(139, 58, 58, 0.2);
+    border-radius: var(--radius-md);
+    padding: var(--sp-5);
+    color: var(--color-danger);
+    font-family: var(--font-body);
+  }
+
+  .buit {
+    color: var(--text-tertiary);
+    font-family: var(--font-body);
+    text-align: center;
+    padding: var(--sp-8) 0;
+  }
+
+  /* ── Animacions ──────────────────────────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    .formula-card {
+      transition: transform 200ms ease-out, border-color 200ms ease-out;
+    }
+
+    .formula-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent-green);
+    }
+
+    .card-imatge img {
+      transition: transform 300ms ease-out;
+    }
+
+    .formula-card:hover .card-imatge img {
+      transform: scale(1.03);
+    }
+  }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 768px) {
+    .formules-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
